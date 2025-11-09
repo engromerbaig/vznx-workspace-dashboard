@@ -2,18 +2,19 @@
 'use client';
 
 import { BaseProject } from '@/types/project';
-import { FaTrash, FaUser, FaCalendar, FaClock } from 'react-icons/fa';
+import { FaTrash, FaUser, FaCalendar, FaClock, FaTasks } from 'react-icons/fa';
 import { FaRegEye } from "react-icons/fa";
 import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { formatDate } from '@/utils/dateFormatter';
+import { formatDateTime } from '@/utils/dateFormatter';
 
 interface ProjectCardProps {
   project: BaseProject;
   onDelete: (projectId: string) => void;
+  taskCount?: number; // Add task count prop
 }
 
-export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
+export default function ProjectCard({ project, onDelete, taskCount = 0 }: ProjectCardProps) {
   const router = useRouter();
 
   const getStatusColor = (status: string) => {
@@ -31,7 +32,6 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
     return '#F59E0B'; // yellow-500
   };
 
- 
   // Data for the circular progress chart
   const progressData = [
     { name: 'Completed', value: project.progress },
@@ -114,29 +114,35 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
 
         {/* Project Metadata - Bottom Section */}
         <div className="mt-auto pt-4 border-t border-gray-100">
-          <div className="grid grid-cols-3 gap-4 text-xs text-gray-500 mb-3">
+          <div className="grid grid-cols-2 gap-3 text-xs text-gray-500 mb-3">
             {/* Created By */}
-            <div className="flex items-center gap-1">
-              <FaUser className="text-gray-400 flex-shrink-0" />
-              <span className="truncate" title={`Created by ${project.createdBy}`}>
+            <div className="flex items-center gap-2 col-span-2">
+              <FaUser className="text-gray-400 flex-shrink-0 text-sm" />
+              <span className="truncate font-medium text-gray-700" title={`Created by ${project.createdBy}`}>
                 {project.createdBy}
               </span>
             </div>
 
             {/* Created Date */}
-            <div className="flex items-center gap-1">
-              <FaCalendar className="text-gray-400 flex-shrink-0" />
-              <span title={new Date(project.createdAt).toLocaleDateString()}>
-                {formatDate(project.createdAt)}
-              </span>
+            <div className="flex items-center gap-2">
+              <FaCalendar className="text-gray-400 flex-shrink-0 text-xs" />
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-400">Created</span>
+                <span className="text-xs font-medium" title={formatDateTime(project.createdAt, { includeTime: true })}>
+                  {formatDateTime(project.createdAt)}
+                </span>
+              </div>
             </div>
 
             {/* Last Updated */}
-            <div className="flex items-center gap-1">
-              <FaClock className="text-gray-400 flex-shrink-0" />
-              <span title={new Date(project.updatedAt).toLocaleDateString()}>
-                {formatDate(project.updatedAt)}
-              </span>
+            <div className="flex items-center gap-2">
+              <FaClock className="text-gray-400 flex-shrink-0 text-xs" />
+              <div className="flex flex-col">
+                <span className="text-xs text-gray-400">Updated</span>
+                <span className="text-xs font-medium" title={formatDateTime(project.updatedAt, { includeTime: true })}>
+                  {formatDateTime(project.updatedAt)}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -144,15 +150,19 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
           <div className="flex justify-between items-center">
             <button
               onClick={() => router.push(`/projects/${project._id}`)}
-              className="flex items-center gap-2 cursor-pointer text-primary hover:text-primary/80 hover:bg-primary/10 px-2 py-2 rounded-md transition-colors font-semibold text-sm"
+              className="flex items-center gap-2 cursor-pointer text-primary hover:text-primary/80 hover:bg-primary/10 px-3 py-2 rounded-md transition-colors font-semibold text-sm"
             >
-              <FaRegEye className="text-base" />
-              View Tasks
+              <div className="flex items-center gap-2">
+                <FaRegEye className="text-base" />
+                <span>
+                  View Tasks {taskCount > 0 && `(${taskCount})`}
+                </span>
+              </div>
             </button>
             
             <button
               onClick={() => onDelete(project._id)}
-              className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors hover:scale-110"
+              className="p-2 cursor-pointer text-red-500 hover:bg-red-50 rounded-lg transition-colors hover:scale-110"
               title="Delete project"
             >
               <FaTrash className="text-sm" />
