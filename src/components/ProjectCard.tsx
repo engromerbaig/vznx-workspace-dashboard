@@ -155,7 +155,7 @@ export default function ProjectCard({ project, onDelete, taskCount = 0 }: Projec
               <div className="flex items-center gap-2">
                 <FaRegEye className="text-base" />
                 <span>
-                  View Tasks {taskCount > 0 && `(${taskCount})`}
+  View Tasks <span className="font-medium">({taskCount})</span>
                 </span>
               </div>
             </button>
