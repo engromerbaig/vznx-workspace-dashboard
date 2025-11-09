@@ -85,7 +85,7 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
         {/* Header with Status */}
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1 pr-3">
-            <h3 className="text-xl font-bold text-gray-800 group-hover:text-gray-900 transition-colors line-clamp-2 leading-tight">
+            <h3 className="text-xl uppercase font-bold text-gray-800 group-hover:text-gray-900 transition-colors line-clamp-2 leading-tight">
               {project.name}
             </h3>
             {project.description && (

@@ -258,7 +258,7 @@ export default function ProjectDetailsPage() {
           <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
               <div className="flex-1">
-                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 break-words">
+                <h1 className="text-2xl uppercase sm:text-3xl font-bold text-gray-800 mb-2 break-words">
                   {project.name}
                 </h1>
                 {project.description && (
@@ -362,20 +362,25 @@ export default function ProjectDetailsPage() {
 
           {/* Tasks List */}
           {tasks.length === 0 ? (
-            <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <div className="text-gray-400 text-4xl sm:text-6xl mb-3 sm:mb-4">📝</div>
-              <div className="text-gray-500 text-lg mb-3 sm:mb-4">No tasks yet</div>
-              <p className="text-gray-400 text-sm mb-4 sm:mb-6 max-w-md mx-auto px-4">
-                Get started by adding your first task to this project. Tasks help you track progress and assign work to team members.
-              </p>
-              <PrimaryButton
-                onClick={() => setShowAddTaskModal(true)}
-                showIcon={true}
-                icon={FaPlus}
-              >
-                Add First Task
-              </PrimaryButton>
-            </div>
+           <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+  <div className="text-gray-400 text-4xl sm:text-6xl mb-3 sm:mb-4">📝</div>
+  <div className="text-gray-500 text-lg mb-3 sm:mb-4">No tasks yet</div>
+  <p className="text-gray-400 text-sm mb-4 sm:mb-6 max-w-md mx-auto px-4">
+    Get started by adding your first task to this project. Tasks help you track progress and assign work to team members.
+  </p>
+  
+  {/* ✅ Center button horizontally */}
+  <div className="flex justify-center">
+    <PrimaryButton
+      onClick={() => setShowAddTaskModal(true)}
+      showIcon={true}
+      icon={FaPlus}
+    >
+      Add First Task
+    </PrimaryButton>
+  </div>
+</div>
+
           ) : (
             <div className="space-y-3">
               {tasks.map(task => (
