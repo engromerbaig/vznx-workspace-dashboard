@@ -65,7 +65,7 @@ export default function Navbar() {
 
           {/* User Info Section */}
           {user && (
-            <div className="px-4 py-3 border-t border-gray-700 mt-auto">
+            <div className="px-4 py-3 border-t border-secondary mt-auto">
               <div className="text-sm text-white mb-2">
                 <div className="font-medium text-white">@{user.username}</div>
               </div>

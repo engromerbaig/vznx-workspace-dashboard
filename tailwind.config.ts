@@ -16,6 +16,9 @@ const config: Config = {
         "primary": "#2B35A0",
         "secondary": "#B6B7BB",
         "scons": "#00C5FF",
+        "borderColor": "ffff00 ",
+        // Additional colors
+        accent: "#FF4081",
         
     
       },
