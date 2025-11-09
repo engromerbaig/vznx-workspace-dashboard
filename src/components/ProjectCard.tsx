@@ -12,10 +12,9 @@ import { FaCheck, FaCircle } from 'react-icons/fa';
 interface ProjectCardProps {
   project: BaseProject;
   onDelete: (projectId: string) => void;
-  taskCount?: number; // Add task count prop
 }
 
-export default function ProjectCard({ project, onDelete, taskCount = 0 }: ProjectCardProps) {
+export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
   const router = useRouter();
 
   const getStatusColor = (status: string) => {
@@ -40,6 +39,10 @@ export default function ProjectCard({ project, onDelete, taskCount = 0 }: Projec
   ];
 
   const progressColor = getProgressColor(project.progress);
+  
+  const totalTasks = project.taskStats?.total ?? 0;
+  const completedTasks = project.taskStats?.completed ?? 0;
+  const pendingTasks = project.taskStats?.incomplete ?? 0;
 
   return (
     <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group relative min-h-[320px]">
@@ -113,9 +116,25 @@ export default function ProjectCard({ project, onDelete, taskCount = 0 }: Projec
           </div>
         </div>
 
+        {/* Task Stats */}
+        {totalTasks > 0 && (
+          <div className="mb-4 bg-gray-50 rounded-lg p-3">
+            <div className="flex justify-between items-center text-xs">
+              <div className="flex items-center gap-2">
+                <FaCheck className="text-green-500 text-sm" />
+                <span className="font-medium text-gray-700">{completedTasks} completed</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <FaCircle className="text-blue-500 text-sm" />
+                <span className="font-medium text-gray-700">{pendingTasks} pending</span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Project Metadata - Bottom Section */}
         <div className="mt-auto pt-4 border-t border-gray-100">
-          <div className="grid grid-cols-2 gap-3 text-xs text-gray-500 mb-3">
+          <div className="grid grid-cols-2 gap-3 text-xs text-gray-500 mb-4">
             {/* Created By */}
             <div className="flex items-center gap-2 col-span-2">
               <FaUser className="text-gray-400 flex-shrink-0 text-sm" />
@@ -156,19 +175,8 @@ export default function ProjectCard({ project, onDelete, taskCount = 0 }: Projec
               <div className="flex items-center gap-2">
                 <FaRegEye className="text-base" />
                 <span>
-  View Tasks ({project.taskStats?.total ?? 0})
-</span>
-
-<div className="flex items-center gap-4 text-xs text-gray-500 mt-2">
-  <span className="flex items-center gap-1">
-    <FaCheck className="text-green-500" />
-    {project.taskStats?.completed ?? 0} done
-  </span>
-  <span className="flex items-center gap-1">
-    <FaCircle className="text-blue-500" />
-    {project.taskStats?.incomplete ?? 0} pending
-  </span>
-</div>
+                  View Tasks ({totalTasks})
+                </span>
               </div>
             </button>
             

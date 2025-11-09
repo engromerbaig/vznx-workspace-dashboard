@@ -9,6 +9,7 @@ import TaskItem from '@/components/TaskItem';
 import AddTaskModal from '@/components/AddTaskModal';
 import PrimaryButton from '@/components/PrimaryButton';
 import { FaPlus, FaArrowLeft } from 'react-icons/fa';
+import { FaSync } from 'react-icons/fa';
 
 export default function ProjectDetailsPage() {
   const params = useParams();
@@ -19,13 +20,14 @@ export default function ProjectDetailsPage() {
   const [tasks, setTasks] = useState<BaseTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Fetch project and tasks
   const fetchProjectData = async () => {
     try {
-      setIsLoading(true);
+      setIsRefreshing(true);
       
-      // Fetch project
+      // Fetch project with task stats
       const projectRes = await fetch(`/api/projects/${projectId}`);
       const projectData = await projectRes.json();
 
@@ -33,7 +35,7 @@ export default function ProjectDetailsPage() {
         setProject(projectData.project);
       }
 
-      // Fetch tasks
+      // Fetch tasks with user info
       const tasksRes = await fetch(`/api/projects/${projectId}/tasks`);
       const tasksData = await tasksRes.json();
 
@@ -44,6 +46,7 @@ export default function ProjectDetailsPage() {
       console.error('Failed to fetch project data:', error);
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -67,8 +70,8 @@ export default function ProjectDetailsPage() {
       if (data.status === 'success') {
         setTasks(prev => [data.task, ...prev]);
         setShowAddTaskModal(false);
-        // Refresh project to update progress
-        fetchProjectData();
+        // Refresh project to update progress and stats
+        await fetchProjectData();
       }
     } catch (error) {
       console.error('Failed to create task:', error);
@@ -87,11 +90,12 @@ export default function ProjectDetailsPage() {
       const data = await res.json();
 
       if (data.status === 'success') {
+        // Update local task state immediately for better UX
         setTasks(prev => prev.map(task => 
           task._id === taskId ? data.task : task
         ));
-        // Refresh project to update progress
-        fetchProjectData();
+        // Refresh project to update progress and stats
+        await fetchProjectData();
       }
     } catch (error) {
       console.error('Failed to update task:', error);
@@ -111,12 +115,17 @@ export default function ProjectDetailsPage() {
 
       if (data.status === 'success') {
         setTasks(prev => prev.filter(task => task._id !== taskId));
-        // Refresh project to update progress
-        fetchProjectData();
+        // Refresh project to update progress and stats
+        await fetchProjectData();
       }
     } catch (error) {
       console.error('Failed to delete task:', error);
     }
+  };
+
+  // Manual refresh
+  const handleRefresh = async () => {
+    await fetchProjectData();
   };
 
   if (isLoading) {
@@ -150,8 +159,9 @@ export default function ProjectDetailsPage() {
     );
   }
 
-  const completedTasks = tasks.filter(task => task.status === 'complete').length;
-  const totalTasks = tasks.length;
+  const completedTasks = project.taskStats?.completed ?? 0;
+  const totalTasks = project.taskStats?.total ?? 0;
+  const pendingTasks = project.taskStats?.incomplete ?? 0;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -159,13 +169,23 @@ export default function ProjectDetailsPage() {
         
         {/* Header */}
         <div className="mb-8">
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="flex items-center gap-2 text-blue-600 hover:text-blue-800 mb-4 transition-colors"
-          >
-            <FaArrowLeft />
-            Back to Projects
-          </button>
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={() => router.push('/dashboard')}
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors"
+            >
+              <FaArrowLeft />
+              Back to Projects
+            </button>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
+            >
+              <FaSync className={isRefreshing ? 'animate-spin' : ''} />
+              {isRefreshing ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
           
           <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex justify-between items-start mb-4">
@@ -185,18 +205,22 @@ export default function ProjectDetailsPage() {
             </div>
 
             {/* Progress Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
               <div className="bg-gray-50 rounded-lg p-4">
                 <div className="text-2xl font-bold text-gray-800">{totalTasks}</div>
                 <div className="text-sm text-gray-600">Total Tasks</div>
               </div>
-              <div className="bg-gray-50 rounded-lg p-4">
+              <div className="bg-green-50 rounded-lg p-4 border border-green-200">
                 <div className="text-2xl font-bold text-green-600">{completedTasks}</div>
-                <div className="text-sm text-gray-600">Completed</div>
+                <div className="text-sm text-green-700">Completed</div>
               </div>
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="text-2xl font-bold text-blue-600">{project.progress}%</div>
-                <div className="text-sm text-gray-600">Progress</div>
+              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <div className="text-2xl font-bold text-blue-600">{pendingTasks}</div>
+                <div className="text-sm text-blue-700">Pending</div>
+              </div>
+              <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
+                <div className="text-2xl font-bold text-orange-600">{project.progress}%</div>
+                <div className="text-sm text-orange-700">Progress</div>
               </div>
             </div>
           </div>
@@ -204,14 +228,25 @@ export default function ProjectDetailsPage() {
 
         {/* Tasks Header */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Tasks</h2>
-          <PrimaryButton
-            onClick={() => setShowAddTaskModal(true)}
-            showIcon={true}
-            icon={FaPlus}
-          >
-            Add Task
-          </PrimaryButton>
+          <h2 className="text-2xl font-bold text-gray-800">Tasks ({totalTasks})</h2>
+          <div className="flex items-center gap-3">
+            <PrimaryButton
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              showIcon={true}
+              icon={FaSync}
+              className={isRefreshing ? 'animate-spin' : ''}
+            >
+              Refresh
+            </PrimaryButton>
+            <PrimaryButton
+              onClick={() => setShowAddTaskModal(true)}
+              showIcon={true}
+              icon={FaPlus}
+            >
+              Add Task
+            </PrimaryButton>
+          </div>
         </div>
 
         {/* Tasks List */}
