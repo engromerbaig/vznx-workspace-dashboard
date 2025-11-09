@@ -1,7 +1,6 @@
 'use client';
 
 import { useUser } from '@/context/UserContext';
-import { PusherTest } from '@/components/PusherTest';
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -10,7 +9,6 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
 
-        {process.env.NODE_ENV === 'development' && <PusherTest />}
         
         {/* Header */}
         <div className="text-center mb-8">

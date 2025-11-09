@@ -8,7 +8,6 @@ import Footer from '@/components/Footer';
 import { UserProvider } from '@/context/UserContext';
 import ToastProvider from '@/components/ToastProvider';
 import AuthProviderWrapper from '@/components/AuthProviderWrapper';
-import { PusherProvider } from '@/providers/PusherProvider';
 import { LogoutProvider } from '@/context/LogoutContext';
 import GlobalLogoutLoader from '@/components/GlobalLogoutLoader';
 import SessionTakeoverListener from '@/components/SessionTakeoverListener';
@@ -32,7 +31,6 @@ export const metadata: Metadata = {
   },
 };
 
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -44,16 +42,14 @@ export default function RootLayout({
         <UserProvider>
           <LogoutProvider>
             <AuthProviderWrapper>
-              <PusherProvider>
-                <GlobalLogoutLoader />
-                <SessionTakeoverListener /> {/* Add this line */}
-                <Navbar />
-                <ClientLayout>
-                  <ToastProvider />
-                  {children}
-                </ClientLayout>
-                <Footer />
-              </PusherProvider>
+              <GlobalLogoutLoader />
+              <SessionTakeoverListener />
+              <Navbar />
+              <ClientLayout>
+                <ToastProvider />
+                {children}
+              </ClientLayout>
+              <Footer />
             </AuthProviderWrapper>
           </LogoutProvider>
         </UserProvider>
