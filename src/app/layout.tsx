@@ -47,7 +47,6 @@ export default function RootLayout({
                 <ToastProvider />
                 {children}
               </ClientLayout>
-              <Footer />
             </AuthProviderWrapper>
           </LogoutProvider>
         </UserProvider>
