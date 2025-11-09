@@ -2,7 +2,6 @@
 
 import Image from 'next/image';
 import LoginForm from '@/components/LoginForm';
-import ContactInfo from '@/components/ContactInfo';
 
 import { companyInfo } from '@/data/companyInfo';
 
@@ -18,7 +17,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white/30 backdrop-blur-lg rounded-3xl shadow-2xl border border-white/40 p-8 md:p-10 z-10 mx-4">
         <div className="flex flex-col items-center gap-y-6 mb-8">
           <Image
-            src="/logo.png"
+            src="/logo2.png"
             alt={companyInfo.name}
             width={220}
             height={80}

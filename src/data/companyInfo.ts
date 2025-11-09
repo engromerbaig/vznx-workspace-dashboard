@@ -1,6 +1,6 @@
 // data/companyInfo.ts
 export const companyInfo = {
-  name: "PEICO Import and Export",
+  name: "VZNX Technologies",
   contact: {
     address: "67, Aiwan e Tijarat Building, Aiwan e Tijarat Road, Karachi, Sindh, Pakistan",
     addressLink: "https://maps.app.goo.gl/7jTazCmHGF2ZABoB9",

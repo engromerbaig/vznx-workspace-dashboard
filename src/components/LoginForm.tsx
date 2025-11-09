@@ -120,35 +120,7 @@ const handleLogin = async (e: React.FormEvent) => {
           isPassword
         />
 
-        {/* Remember Me Checkbox */}
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="rememberMe"
-            checked={rememberMe}
-            onChange={(e) => setRememberMe(e.target.checked)}
-            disabled={isSubmitting}
-            className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary"
-          />
-          <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
-            Remember me for 7 days
-          </label>
-        </div>
-
-        {/* Session Info */}
-        <div className="text-xs text-gray-500 text-center p-3 bg-gray-50 rounded-lg">
-          {rememberMe ? (
-            <div className="flex items-center justify-center gap-2">
-              <FaUserClock className="text-green-600" />
-              <span>You will stay logged in for 7 days on this device</span>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center gap-2">
-              <FaUserClock className="text-blue-600" />
-              <span>Session expires after {AUTH_CONFIG.INACTIVITY_TIMEOUT} minutes of inactivity</span>
-            </div>
-          )}
-        </div>
+      
 
         <PrimaryButton
           type="submit"
