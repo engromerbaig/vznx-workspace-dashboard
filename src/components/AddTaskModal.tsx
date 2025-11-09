@@ -1,7 +1,7 @@
-// src/components/AddTaskModal.tsx
 'use client';
 
 import { useState } from 'react';
+import Modal from './Modal';
 import PrimaryButton from '@/components/PrimaryButton';
 import InputField from '@/components/InputField';
 
@@ -16,7 +16,6 @@ export default function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModal
   const [assignedTo, setAssignedTo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Sample team members for assignment
   const teamMembers = ['Sarah Chen', 'Mike Rodriguez', 'Emma Wilson', 'Alex Thompson'];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,10 +26,11 @@ export default function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModal
     try {
       await onSubmit({
         name: name.trim(),
-        assignedTo: assignedTo.trim()
+        assignedTo: assignedTo.trim(),
       });
       setName('');
       setAssignedTo('');
+      onClose(); // Close after adding task
     } finally {
       setIsSubmitting(false);
     }
@@ -42,66 +42,60 @@ export default function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModal
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-        <div className="p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Add New Task</h2>
-          
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <InputField
-              label="Task Name"
-              type="text"
-              required
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter task name"
-              disabled={isSubmitting}
-            />
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Assign To
-              </label>
-              <select
-                value={assignedTo}
-                onChange={(e) => setAssignedTo(e.target.value)}
-                required
-                disabled={isSubmitting}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
-              >
-                <option value="">Select team member</option>
-                {teamMembers.map(member => (
-                  <option key={member} value={member}>{member}</option>
-                ))}
-              </select>
-            </div>
+    <Modal isOpen={isOpen} onClose={handleClose}>
+      <h2 className="text-xl font-bold mb-4">Add New Task</h2>
 
-            <div className="flex gap-3 pt-4">
-              <button
-                type="button"
-                onClick={handleClose}
-                disabled={isSubmitting}
-                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              
-              <PrimaryButton
-                type="submit"
-                disabled={!name.trim() || !assignedTo || isSubmitting}
-                isLoading={isSubmitting}
-                loadingText="Adding..."
-                className="flex-1"
-              >
-                Add Task
-              </PrimaryButton>
-            </div>
-          </form>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <InputField
+          label="Task Name"
+          type="text"
+          required
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="Enter task name"
+          disabled={isSubmitting}
+        />
+
+        <div>
+          <label className="block text-sm font-medium mb-2">Assign To</label>
+          <select
+            value={assignedTo}
+            onChange={(e) => setAssignedTo(e.target.value)}
+            required
+            disabled={isSubmitting}
+            className="w-full px-3 py-2 border border-gray-600 rounded-md bg-neutral-900 text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-700 disabled:cursor-not-allowed"
+          >
+            <option value="">Select team member</option>
+            {teamMembers.map((member) => (
+              <option key={member} value={member}>
+                {member}
+              </option>
+            ))}
+          </select>
         </div>
-      </div>
-    </div>
+
+        <div className="flex gap-3 pt-4">
+          <PrimaryButton
+            type="button"
+            onClick={handleClose}
+            disabled={isSubmitting}
+            className="flex-1"
+          >
+            Cancel
+          </PrimaryButton>
+
+          <PrimaryButton
+            type="submit"
+            disabled={!name.trim() || !assignedTo || isSubmitting}
+            isLoading={isSubmitting}
+            loadingText="Adding..."
+            className="flex-1"
+          >
+            Add Task
+          </PrimaryButton>
+        </div>
+      </form>
+    </Modal>
   );
 }
