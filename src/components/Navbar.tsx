@@ -67,7 +67,7 @@ export default function Navbar() {
           {user && (
             <div className="px-4 py-3 border-t border-secondary mt-auto">
               <div className="flex items-center gap-3 text-white mb-3">
-                <div className="w-8 h-8 bg-primary/30 rounded-full flex items-center justify-center">
+                <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center">
                   <FaUser className="text-sm" />
                 </div>
                 <div className="text-sm">
