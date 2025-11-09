@@ -2,8 +2,10 @@
 'use client';
 
 import { BaseProject } from '@/types/project';
-import { FaTrash, FaEdit, FaTasks } from 'react-icons/fa';
+import { FaTrash } from 'react-icons/fa';
+import { FaRegEye } from "react-icons/fa";
 import { useRouter } from 'next/navigation';
+import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 
 interface ProjectCardProps {
   project: BaseProject;
@@ -23,54 +25,104 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
   };
 
   const getProgressColor = (progress: number) => {
-    if (progress === 100) return 'bg-green-500';
-    if (progress >= 50) return 'bg-blue-500';
-    return 'bg-yellow-500';
+    if (progress === 100) return '#10B981'; // green-500
+    if (progress >= 50) return '#3B82F6'; // blue-500
+    return '#F59E0B'; // yellow-500
   };
 
+  // Data for the circular progress chart
+  const progressData = [
+    { name: 'Completed', value: project.progress },
+    { name: 'Remaining', value: 100 - project.progress }
+  ];
+
+  const progressColor = getProgressColor(project.progress);
+
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow">
-      {/* Header */}
-      <div className="flex justify-between items-start mb-4">
-        <h3 className="text-lg font-semibold text-gray-800 truncate">{project.name}</h3>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(project.status)}`}>
-          {project.status.replace('-', ' ')}
-        </span>
-      </div>
-
-      {/* Description */}
-      {project.description && (
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{project.description}</p>
-      )}
-
-      {/* Progress Bar */}
-      <div className="mb-4">
-        <div className="flex justify-between text-sm text-gray-600 mb-2">
-          <span>Progress</span>
-          <span>{project.progress}%</span>
-        </div>
-        <div className="w-full bg-gray-200 rounded-full h-2">
-          <div 
-            className={`h-2 rounded-full ${getProgressColor(project.progress)} transition-all duration-300`}
-            style={{ width: `${project.progress}%` }}
-          ></div>
+    <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group relative min-h-[280px]">
+      
+      {/* Circular Progress Background - Centered */}
+      <div className="absolute inset-0 flex items-center justify-center opacity-10 group-hover:opacity-20 transition-opacity duration-300">
+        <div className="w-48 h-48"> {/* Increased size for better visibility */}
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                data={progressData}
+                cx="50%"
+                cy="50%"
+                innerRadius={35}
+                outerRadius={70}
+                paddingAngle={0}
+                dataKey="value"
+                startAngle={90}
+                endAngle={450}
+              >
+                <Cell key="completed" fill={progressColor} />
+                <Cell key="remaining" fill="#E5E7EB" />
+              </Pie>
+            </PieChart>
+          </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="flex justify-between items-center">
-        <button
-          onClick={() => router.push(`/projects/${project._id}`)}
-          className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 transition-colors"
-        >
-          <FaTasks className="text-xs" />
-          View Tasks
-        </button>
+      {/* Content */}
+      <div className="p-6 relative z-10 h-full flex flex-col">
         
-        <div className="flex gap-2">
+        {/* Header with Status */}
+        <div className="flex justify-between items-start mb-4">
+          <h3 className="text-xl font-bold text-gray-800 truncate flex-1 pr-3">{project.name}</h3>
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(project.status)} whitespace-nowrap`}>
+            {project.status.replace('-', ' ')}
+          </span>
+        </div>
+
+        {/* Description */}
+        {project.description && (
+          <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed flex-grow">
+            {project.description}
+          </p>
+        )}
+
+        {/* Progress Section */}
+        <div className="mt-auto">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm font-medium text-gray-700">Progress</span>
+            <span className="text-2xl font-bold text-gray-800">{project.progress}%</span>
+          </div>
+          
+          {/* Main Progress Bar */}
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-2">
+            <div 
+              className="h-2 rounded-full transition-all duration-500"
+              style={{ 
+                width: `${project.progress}%`,
+                backgroundColor: progressColor
+              }}
+            ></div>
+          </div>
+          
+          {/* Progress Status Text */}
+          <div className="text-xs text-gray-500 font-medium text-center">
+            {project.progress === 100 ? '🎉 Project Completed!' : 
+             project.progress >= 75 ? '🔥 Almost there!' :
+             project.progress >= 50 ? '⚡ Good progress' :
+             project.progress >= 25 ? '📈 Making progress' : '🚀 Getting started'}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-100">
+          <button
+            onClick={() => router.push(`/projects/${project._id}`)}
+            className="flex items-center gap-2 cursor-pointer text-primary hover:text-primary/80 hover:bg-primary/10 px-2 py-2 rounded-md transition-colors font-semibold text-sm"
+          >
+            <FaRegEye className="text-base" />
+            View Tasks
+          </button>
+          
           <button
             onClick={() => onDelete(project._id)}
-            className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors hover:scale-110"
             title="Delete project"
           >
             <FaTrash className="text-sm" />
