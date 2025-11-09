@@ -31,13 +31,13 @@ export default function Navbar() {
       </button>
 
       <div
-        className={`fixed top-0 left-0 h-full bg-white shadow-xl z-40 w-64 p-6 flex flex-col gap-4 md:translate-x-0 transform transition-transform duration-300 ${
+        className={`fixed top-0 left-0 h-full  shadow-xl z-40 w-64 p-6 flex flex-col gap-4 md:translate-x-0 transform transition-transform duration-300 ${
           isCanvasOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isLoggingOut ? 'pointer-events-none opacity-50' : ''}`}
       >
         <div className="mb-2">
           <a href="/dashboard">
-            <Image src="/logo2.png" alt="Econs Logo" width={140} height={30} />
+            <Image src="/logo2.png" alt="VZNX Logo" width={140} height={30} />
           </a>
         </div>
 

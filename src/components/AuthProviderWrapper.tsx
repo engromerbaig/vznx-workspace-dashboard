@@ -27,11 +27,8 @@ export default function AuthProviderWrapper({
   const countdownRef = useRef<NodeJS.Timeout | null>(null);
   const authCheckIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Don't show modal on login page or unauthorized page
-  const shouldShowModal = showInactivityModal && 
-    pathname !== '/' && 
-    pathname !== '/unauthorized' && 
-    !!user; // Convert user to boolean
+  // Don't show modal on login page
+  const shouldShowModal = showInactivityModal && pathname !== '/' && !!user;
 
   const isRememberMeEnabled = useCallback(() => {
     if (typeof document === 'undefined') return false;
@@ -44,7 +41,6 @@ export default function AuthProviderWrapper({
   }, []);
 
   const handleAutoLogout = useCallback(async () => {
-    console.log('🚪 Auto logout triggered');
     setShowInactivityModal(false);
     if (countdownRef.current) {
       clearInterval(countdownRef.current);
@@ -55,8 +51,6 @@ export default function AuthProviderWrapper({
   }, [handleGlobalLogout]);
 
   const startActivityCheckTimer = useCallback(() => {
-    console.log('🔄 Starting periodic activity check timer');
-    
     // Clear existing timers
     if (inactivityWarningRef.current) {
       clearTimeout(inactivityWarningRef.current);
@@ -69,8 +63,7 @@ export default function AuthProviderWrapper({
     }
 
     // Don't set timers on public routes
-    if (pathname === '/' || pathname === '/unauthorized') {
-      console.log('⏸️ Not setting timers on public route:', pathname);
+    if (pathname === '/') {
       return;
     }
 
@@ -79,10 +72,7 @@ export default function AuthProviderWrapper({
     if (rememberMeDisabled && user) {
       const inactivityTimeoutMs = getInactivityTimeoutMs(false);
       
-      console.log(`🕒 Setting activity check timer for ${inactivityTimeoutMs}ms`);
-      
       inactivityWarningRef.current = setTimeout(() => {
-        console.log('⚠️ ACTIVITY CHECK MODAL TRIGGERED');
         setShowInactivityModal(true);
         setCountdown(getWarningCountdown());
         
@@ -102,8 +92,6 @@ export default function AuthProviderWrapper({
   }, [user, isRememberMeEnabled, handleAutoLogout, pathname]);
 
   const handleUserActive = useCallback(() => {
-    console.log('✅ User responded - dismissing modal');
-    
     if (countdownRef.current) {
       clearInterval(countdownRef.current);
       countdownRef.current = null;
@@ -115,21 +103,18 @@ export default function AuthProviderWrapper({
   }, [startActivityCheckTimer]);
 
   const extendSession = useCallback(async () => {
-    console.log('🔄 Extending session');
     try {
       const res = await fetch(AUTH_CONFIG.ENDPOINTS.EXTEND_SESSION, { 
         method: 'POST' 
       });
       
       if (res.ok) {
-        console.log('✅ Session extended successfully');
         handleUserActive();
         toast.success('Session extended');
       } else {
         throw new Error('Failed to extend session');
       }
     } catch (error) {
-      console.error('Session extension error:', error);
       toast.error('Failed to extend session');
       // Even if extension fails, keep user logged in for now
       handleUserActive();
@@ -138,24 +123,17 @@ export default function AuthProviderWrapper({
 
   const checkAuth = useCallback(async () => {
     try {
-      console.log('🔐 Checking auth status...');
       const res = await fetch(AUTH_CONFIG.ENDPOINTS.ME);
       const data = await res.json();
 
       if (data.status === 'success' && data.user) {
-        console.log('✅ User authenticated:', data.user.email);
         setUser(data.user);
         
         // Redirect logic - only if on login page
         if (pathname === '/') {
-          if (data.user.role === 'superadmin') {
-            router.push('/superadmin');
-          } else {
-            router.push('/dashboard');
-          }
+          router.push('/dashboard');
         }
       } else {
-        console.log('❌ User not authenticated');
         setUser(null);
         
         // Only redirect if trying to access protected routes
@@ -164,7 +142,6 @@ export default function AuthProviderWrapper({
         }
       }
     } catch (error) {
-      console.error('Auth check failed:', error);
       setUser(null);
       
       if (pathname.startsWith('/dashboard') || pathname.startsWith('/superadmin')) {
@@ -179,10 +156,7 @@ export default function AuthProviderWrapper({
   useEffect(() => {
     if (!shouldShowModal) return;
 
-    console.log('🎯 Setting up activity listeners for modal dismissal');
-
     const handleUserActivity = () => {
-      console.log('🎯 Activity detected while modal shown');
       handleUserActive();
     };
 
@@ -201,16 +175,12 @@ export default function AuthProviderWrapper({
 
   // Initial setup
   useEffect(() => {
-    console.log('🚀 AuthProviderWrapper mounted');
-    
     checkAuth();
     startActivityCheckTimer();
 
     authCheckIntervalRef.current = setInterval(checkAuth, 20 * 60 * 1000);
 
     return () => {
-      console.log('🧹 Cleaning up AuthProviderWrapper');
-      
       if (inactivityWarningRef.current) {
         clearTimeout(inactivityWarningRef.current);
       }
@@ -228,12 +198,11 @@ export default function AuthProviderWrapper({
   // Restart timer when user or pathname changes
   useEffect(() => {
     if (user && !isChecking) {
-      console.log('👤 User/path changed, restarting timer');
       startActivityCheckTimer();
     }
   }, [user, isChecking, startActivityCheckTimer, pathname]);
 
-  if (isChecking && (pathname.startsWith('/dashboard') || pathname.startsWith('/superadmin'))) {
+  if (isChecking && (pathname.startsWith('/dashboard') )) {
     return <Loading />;
   }
 

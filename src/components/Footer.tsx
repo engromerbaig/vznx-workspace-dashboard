@@ -10,7 +10,7 @@ export default function Footer() {
   if (isRoot) return null;
 
   return (
-    <footer className="bg-gray-100 py-4 mt-auto">
+    <footer className=" py-4 mt-auto">
       <div className="container mx-auto px-4 text-right">
         <p className="text-xs font-semibold text-gray-600">
           Designed and Developed by{" "}
@@ -20,7 +20,7 @@ export default function Footer() {
             rel="noopener noreferrer"
             className="text-scons/80 hover:text-scons transition-colors"
           >
-            Scons Tech
+            Muhammad Omer Baig
           </Link>
         </p>
       </div>
