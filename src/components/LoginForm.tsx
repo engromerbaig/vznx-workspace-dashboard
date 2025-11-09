@@ -29,72 +29,67 @@ export default function LoginForm() {
     }
   }, []);
 
-// Update the success handler in your LoginForm component
-const handleLogin = async (e: React.FormEvent) => {
-  e.preventDefault();
-  
-  if (isSubmitting) return;
-  
-  setIsSubmitting(true);
-
-  if (!email || !password) {
-    toast.error('Email and password are required');
-    setIsSubmitting(false);
-    return;
-  }
-
-  try {
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        email: email.trim(), 
-        password, 
-        rememberMe 
-      }),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      toast.error(data.message || `Login failed: ${res.status}`);
-      setIsSubmitting(false);
-      return;
-    }
-
-    if (data.status !== 'success') {
-      toast.error(data.message || 'Login failed');
-      setIsSubmitting(false);
-      return;
-    }
-
-    // Set user context
-    setUser(data.user);
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
     
-    // Show appropriate message based on session takeover
-    if (data.sessionTakeover) {
-      toast.success('Login successful! Previous session has been terminated for security.');
-    } else {
-      toast.success(`Login successful! ${rememberMe ? 'You will stay logged in for 7 days.' : 'Session expires after 30 minutes of inactivity.'}`);
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+
+    if (!email || !password) {
+      toast.error('Email and password are required');
+      setIsSubmitting(false);
+      return;
     }
 
-    // Redirect based on role
-    setTimeout(() => {
-      if (data.user.role === 'superadmin') {
-        router.push('/superadmin');
-      } else {
-        router.push('/dashboard');
-      }
-    }, 100);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email: email.trim(), 
+          password, 
+          rememberMe 
+        }),
+      });
 
-  } catch (error) {
-    console.error('Login network error:', error);
-    toast.error('Network error. Please check your connection and try again.');
-    setIsSubmitting(false);
-  }
-};
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.message || `Login failed: ${res.status}`);
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (data.status !== 'success') {
+        toast.error(data.message || 'Login failed');
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Set user context
+      setUser(data.user);
+      
+      // Show appropriate message based on session takeover
+      if (data.sessionTakeover) {
+        toast.success('Login successful! Previous session has been terminated for security.');
+      } else {
+        toast.success(`Login successful! ${rememberMe ? 'You will stay logged in for 7 days.' : 'Session expires after 30 minutes of inactivity.'}`);
+      }
+
+      // Always redirect to dashboard
+      setTimeout(() => {
+        router.push('/dashboard');
+      }, 100);
+
+    } catch (error) {
+      console.error('Login network error:', error);
+      toast.error('Network error. Please check your connection and try again.');
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className={`w-full max-w-md space-y-6 ${isSubmitting ? 'pointer-events-none opacity-50' : ''}`}>
@@ -119,8 +114,6 @@ const handleLogin = async (e: React.FormEvent) => {
           disabled={isSubmitting}
           isPassword
         />
-
-      
 
         <PrimaryButton
           type="submit"

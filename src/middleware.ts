@@ -2,13 +2,6 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { AUTH_CONFIG } from '@/lib/auth-config';
-import { ROLES, isValidRole, type UserRole } from '@/lib/roles';
-
-// Define protected routes and their required roles
-const protectedRoutes: Record<string, UserRole[]> = {
-  '/dashboard': [ROLES.SUPERADMIN, ROLES.MANAGER, ROLES.USER], // All authenticated users
-  '/superadmin': [ROLES.SUPERADMIN], // Superadmin only
-};
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -18,10 +11,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if route is protected
-  const isProtected = Object.keys(protectedRoutes).some(route => 
-    pathname.startsWith(route)
-  );
+  // Check if route is protected (any route beyond root)
+  const isProtected = pathname !== '/';
 
   if (!isProtected) {
     return NextResponse.next();
@@ -59,25 +50,8 @@ export async function middleware(request: NextRequest) {
       return redirectResponse;
     }
 
-    // Validate user role
-    if (!isValidRole(user.role)) {
-      console.log(`❌ Invalid user role: ${user.role}`);
-      const redirectResponse = NextResponse.redirect(new URL('/', request.url));
-      redirectResponse.cookies.delete(AUTH_CONFIG.SESSION.COOKIE_NAME);
-      return redirectResponse;
-    }
-
-    // Check role-based access
-    for (const [route, allowedRoles] of Object.entries(protectedRoutes)) {
-      if (pathname.startsWith(route) && !allowedRoles.includes(user.role)) {
-        console.log(`❌ Role ${user.role} not allowed for ${route}`);
-        return NextResponse.redirect(new URL('/unauthorized', request.url));
-      }
-    }
-
     // Add user to headers for client components
     const requestHeaders = new Headers(request.headers);
-    requestHeaders.set('x-user-role', user.role);
     requestHeaders.set('x-user-id', user._id);
     
     const nextResponse = NextResponse.next({
@@ -98,8 +72,13 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/superadmin/:path*',
-    '/unauthorized',
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

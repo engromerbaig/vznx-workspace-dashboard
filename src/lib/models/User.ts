@@ -1,6 +1,5 @@
 // src/lib/models/User.ts
 import { Schema, models, model, InferSchemaType, Types } from 'mongoose';
-import { ROLES } from '../roles';
 
 const userSchema = new Schema({
   email: { type: String, required: true, unique: true, lowercase: true, trim: true },
@@ -14,19 +13,7 @@ const userSchema = new Schema({
     }
   },
   passwordHash: { type: String, required: true },
-  role: { type: String, required: true, enum: Object.values(ROLES), default: ROLES.MANAGER },
-  
-  // Role-based permissions (inherited from role)
-  rolePermissions: { 
-    type: [String], 
-    default: [] 
-  },
-  
-  // Specific permissions (override/add to role permissions)
-  specificPermissions: { 
-    type: [String], 
-    default: [] 
-  },
+  role: { type: String, required: true, default: 'user' },
   
   sessionToken: { type: String, default: null, index: true },
   sessionCreatedAt: { type: Date, default: null },
@@ -44,41 +31,10 @@ const userSchema = new Schema({
   timestamps: true // This automatically adds createdAt and updatedAt
 });
 
-// Virtual for combined permissions (role + specific)
-userSchema.virtual('permissions').get(function() {
-  const rolePerms = this.rolePermissions || [];
-  const specificPerms = this.specificPermissions || [];
-  
-  // Combine and remove duplicates
-  return [...new Set([...rolePerms, ...specificPerms])];
-});
-
-// Method to check if user has a specific permission
-userSchema.methods.hasPermission = function(permission: string): boolean {
-  const allPermissions = this.permissions;
-  return allPermissions.includes(permission);
-};
-
-// Method to check if user has any of the given permissions
-userSchema.methods.hasAnyPermission = function(permissions: string[]): boolean {
-  const allPermissions = this.permissions;
-  return permissions.some(permission => allPermissions.includes(permission));
-};
-
-// Method to check if user has all of the given permissions
-userSchema.methods.hasAllPermissions = function(permissions: string[]): boolean {
-  const allPermissions = this.permissions;
-  return permissions.every(permission => allPermissions.includes(permission));
-};
-
 export type UserDocument = InferSchemaType<typeof userSchema> & {
   _id: string;
   createdAt: Date;
   updatedAt: Date;
-  permissions: string[]; // Virtual field
-  hasPermission: (permission: string) => boolean;
-  hasAnyPermission: (permissions: string[]) => boolean;
-  hasAllPermissions: (permissions: string[]) => boolean;
 };
 
 const User = models.User || model('User', userSchema);

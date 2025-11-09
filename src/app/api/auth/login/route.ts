@@ -40,7 +40,7 @@ export async function POST(request: Request) {
 
     const now = new Date();
 
-    // Check for existing session - FIXED: Proper session takeover logic
+    // Check for existing session
     const existingSessionUser = await getCurrentUser();
     const isSessionTakeover = existingSessionUser?._id?.toString() === user._id.toString();
 
@@ -81,8 +81,6 @@ export async function POST(request: Request) {
     try {
       const counts = {
         totalUsers: await users.countDocuments(),
-        totalSuperadmins: await users.countDocuments({ role: 'superadmin' }),
-        totalManagers: await users.countDocuments({ role: 'manager' }),
         totalOnline: await users.countDocuments({ sessionExpiresAt: { $gt: new Date() } })
       };
 
