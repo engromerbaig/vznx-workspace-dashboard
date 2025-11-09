@@ -100,11 +100,7 @@ export default function LoginForm() {
   return (
     <div className={`w-full max-w-md space-y-6 ${isSubmitting ? 'pointer-events-none opacity-50' : ''}`}>
       {/* Development notice */}
-      {process.env.NODE_ENV === 'development' && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-800 px-4 py-3 rounded-md text-sm">
-          <strong>Development Mode:</strong> Using mock credentials (admin/admin)
-        </div>
-      )}
+   
       
       <form onSubmit={handleLogin} className="space-y-5">
         <InputField
