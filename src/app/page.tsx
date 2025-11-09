@@ -12,7 +12,16 @@ export default function LoginPage() {
       <div className="hidden lg:flex lg:flex-1 items-center justify-center p-12 bg-secondary">
         <div className="max-w-md text-center">
           <Heading 
-            title="Cut the chaos build the future"
+            title="Cut the Chaos."
+            titleColor="text-black"
+            titleSize="text-5xl"
+            titleWeight="font-bold"
+            titleAlign="text-left"
+            titleLineHeight="1.1"
+            className="mb-8"
+          />
+               <Heading 
+            title="Build the Future."
             titleColor="text-black"
             titleSize="text-5xl"
             titleWeight="font-bold"

@@ -21,7 +21,7 @@ const Heading = ({
   // style-related props
   titleSize = 'text-4xl',
   titleWeight = 'font-bold',
-  titleMargin = 'mb-4',
+  titleMargin = 'mb-2',
   titleLineHeight = '1.0',
   titleAlign = 'text-center',
 
