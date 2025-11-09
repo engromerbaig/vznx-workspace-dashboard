@@ -10,9 +10,43 @@ export async function GET(
 ) {
   try {
     const db = await getDatabase();
-    const project = await db.collection('projects').findOne({
-      _id: new ObjectId(params.id)
-    });
+    
+    const project = await db.collection('projects').aggregate([
+      {
+        $match: { _id: new ObjectId(params.id) }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'creator'
+        }
+      },
+      {
+        $unwind: {
+          path: '$creator',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          status: 1,
+          progress: 1,
+          description: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          createdBy: {
+            $cond: {
+              if: { $ne: ['$creator', null] },
+              then: '$creator.username',
+              else: 'system'
+            }
+          }
+        }
+      }
+    ]).next();
 
     if (!project) {
       return NextResponse.json(
@@ -27,7 +61,7 @@ export async function GET(
       status: project.status,
       progress: project.progress,
       description: project.description,
-      createdBy: project.createdBy || 'system', // Add createdBy with fallback
+      createdBy: project.createdBy, // Actual username
       createdAt: project.createdAt.toISOString(),
       updatedAt: project.updatedAt.toISOString()
     };
@@ -45,6 +79,7 @@ export async function GET(
   }
 }
 
+// Update PUT function similarly...
 export async function PUT(
   request: Request,
   { params }: { params: { id: string } }
@@ -70,10 +105,43 @@ export async function PUT(
       );
     }
 
-    // Return updated project - with null check
-    const updatedProject = await db.collection('projects').findOne({
-      _id: new ObjectId(params.id)
-    });
+    // Return updated project with populated creator
+    const updatedProject = await db.collection('projects').aggregate([
+      {
+        $match: { _id: new ObjectId(params.id) }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'creator'
+        }
+      },
+      {
+        $unwind: {
+          path: '$creator',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          status: 1,
+          progress: 1,
+          description: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          createdBy: {
+            $cond: {
+              if: { $ne: ['$creator', null] },
+              then: '$creator.username',
+              else: 'system'
+            }
+          }
+        }
+      }
+    ]).next();
 
     if (!updatedProject) {
       return NextResponse.json(
@@ -88,7 +156,7 @@ export async function PUT(
       status: updatedProject.status,
       progress: updatedProject.progress,
       description: updatedProject.description,
-      createdBy: updatedProject.createdBy || 'system', // Add createdBy with fallback
+      createdBy: updatedProject.createdBy, // Actual username
       createdAt: updatedProject.createdAt.toISOString(),
       updatedAt: updatedProject.updatedAt.toISOString()
     };
@@ -101,42 +169,6 @@ export async function PUT(
     console.error('Failed to update project:', error);
     return NextResponse.json(
       { status: 'error', message: 'Failed to update project' },
-      { status: 500 }
-    );
-  }
-}
-
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
-  try {
-    const db = await getDatabase();
-    
-    const result = await db.collection('projects').deleteOne({
-      _id: new ObjectId(params.id)
-    });
-
-    if (result.deletedCount === 0) {
-      return NextResponse.json(
-        { status: 'error', message: 'Project not found' },
-        { status: 404 }
-      );
-    }
-
-    // Also delete all tasks associated with this project
-    await db.collection('tasks').deleteMany({
-      projectId: params.id
-    });
-
-    return NextResponse.json({ 
-      status: 'success', 
-      message: 'Project deleted successfully' 
-    });
-  } catch (error) {
-    console.error('Failed to delete project:', error);
-    return NextResponse.json(
-      { status: 'error', message: 'Failed to delete project' },
       { status: 500 }
     );
   }

@@ -25,16 +25,16 @@ const projectSchema = new Schema({
     trim: true 
   },
   createdBy: {
-    type: String,
-    required: true,
-    default: 'system'
+    type: Schema.Types.ObjectId, // Store as ObjectId to reference User
+    ref: 'User',
+    required: true
   }
 }, { 
   timestamps: true 
 });
 
 export type ProjectDocument = InferSchemaType<typeof projectSchema> & {
-  _id: string;
+  _id: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 };

@@ -2,14 +2,50 @@
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { BaseProject } from '@/types/project';
+import { getCurrentUser } from '@/lib/server/auth-utils';
+import { ObjectId } from 'mongodb';
 
 export async function GET() {
   try {
     const db = await getDatabase();
-    const projects = await db.collection('projects')
-      .find()
-      .sort({ createdAt: -1 })
-      .toArray();
+    
+    // Use aggregation to join with users collection
+    const projects = await db.collection('projects').aggregate([
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'creator'
+        }
+      },
+      {
+        $unwind: {
+          path: '$creator',
+          preserveNullAndEmptyArrays: true // In case user doesn't exist
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          status: 1,
+          progress: 1,
+          description: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          createdBy: {
+            $cond: {
+              if: { $ne: ['$creator', null] },
+              then: '$creator.username',
+              else: 'system'
+            }
+          }
+        }
+      },
+      {
+        $sort: { createdAt: -1 }
+      }
+    ]).toArray();
 
     const formattedProjects: BaseProject[] = projects.map(project => ({
       _id: project._id.toString(),
@@ -17,7 +53,7 @@ export async function GET() {
       status: project.status,
       progress: project.progress,
       description: project.description,
-      createdBy: project.createdBy || 'system', // Add createdBy with fallback
+      createdBy: project.createdBy, // This now contains the actual username
       createdAt: project.createdAt.toISOString(),
       updatedAt: project.updatedAt.toISOString()
     }));
@@ -37,11 +73,19 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const { name, description, status = 'planning', createdBy = 'system' }: { 
+    const currentUser = await getCurrentUser();
+    
+    if (!currentUser) {
+      return NextResponse.json(
+        { status: 'error', message: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
+    const { name, description, status = 'planning' }: { 
       name: string; 
       description?: string; 
       status?: 'planning' | 'in-progress' | 'completed';
-      createdBy?: string;
     } = await request.json();
 
     if (!name || name.trim() === '') {
@@ -59,27 +103,69 @@ export async function POST(request: Request) {
       description: description?.trim(),
       status,
       progress: 0,
-      createdBy: createdBy.trim(),
+      createdBy: new ObjectId(currentUser._id), // Store user ID as ObjectId
       createdAt: now,
       updatedAt: now
     };
 
     const result = await db.collection('projects').insertOne(project);
     
-    const newProject: BaseProject = {
-      _id: result.insertedId.toString(),
-      name: project.name,
-      status: project.status,
-      progress: project.progress,
-      description: project.description,
-      createdBy: project.createdBy,
-      createdAt: project.createdAt.toISOString(),
-      updatedAt: project.updatedAt.toISOString()
+    // Get the created project with populated creator info
+    const newProject = await db.collection('projects').aggregate([
+      {
+        $match: { _id: result.insertedId }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'creator'
+        }
+      },
+      {
+        $unwind: {
+          path: '$creator',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          name: 1,
+          status: 1,
+          progress: 1,
+          description: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          createdBy: {
+            $cond: {
+              if: { $ne: ['$creator', null] },
+              then: '$creator.username',
+              else: 'system'
+            }
+          }
+        }
+      }
+    ]).next();
+
+    if (!newProject) {
+      throw new Error('Failed to create project');
+    }
+
+    const formattedProject: BaseProject = {
+      _id: newProject._id.toString(),
+      name: newProject.name,
+      status: newProject.status,
+      progress: newProject.progress,
+      description: newProject.description,
+      createdBy: newProject.createdBy,
+      createdAt: newProject.createdAt.toISOString(),
+      updatedAt: newProject.updatedAt.toISOString()
     };
 
     return NextResponse.json({ 
       status: 'success', 
-      project: newProject 
+      project: formattedProject 
     }, { status: 201 });
 
   } catch (error) {
