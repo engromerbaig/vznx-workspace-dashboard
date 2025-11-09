@@ -2,12 +2,14 @@
 'use client';
 
 import { BaseProject } from '@/types/project';
-import { FaTrash, FaUser, FaCalendar, FaClock, FaTasks } from 'react-icons/fa';
+import { FaTrash, FaUser, FaCalendar, FaClock, FaCheck, FaCircle } from 'react-icons/fa';
 import { FaRegEye } from "react-icons/fa";
 import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { formatDateTime } from '@/utils/dateFormatter';
-import { FaCheck, FaCircle } from 'react-icons/fa';
+import { getStatusColors, formatStatusText } from '@/utils/projectStatus';
+import { getProgressColor, getProgressStatusText, generateProgressData } from '@/utils/projectProgress';
+import { getTaskStats } from '@/utils/taskStats';
 
 interface ProjectCardProps {
   project: BaseProject;
@@ -17,32 +19,12 @@ interface ProjectCardProps {
 export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
   const router = useRouter();
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
-      case 'planning': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getProgressColor = (progress: number) => {
-    if (progress === 100) return '#10B981'; // green-500
-    if (progress >= 50) return '#3B82F6'; // blue-500
-    return '#F59E0B'; // yellow-500
-  };
-
-  // Data for the circular progress chart
-  const progressData = [
-    { name: 'Completed', value: project.progress },
-    { name: 'Remaining', value: 100 - project.progress }
-  ];
-
+  // Use utility functions
+  const statusColors = getStatusColors(project.status);
   const progressColor = getProgressColor(project.progress);
-  
-  const totalTasks = project.taskStats?.total ?? 0;
-  const completedTasks = project.taskStats?.completed ?? 0;
-  const pendingTasks = project.taskStats?.incomplete ?? 0;
+  const progressData = generateProgressData(project.progress);
+  const progressStatusText = getProgressStatusText(project.progress);
+  const { total, completed, incomplete } = getTaskStats(project.taskStats);
 
   return (
     <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group relative min-h-[320px]">
@@ -77,8 +59,8 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
         {/* Header with Status */}
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-xl font-bold text-gray-800 truncate uppercase flex-1 pr-3">{project.name}</h3>
-          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(project.status)} whitespace-nowrap`}>
-            {project.status.replace('-', ' ')}
+          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColors.background} ${statusColors.text} whitespace-nowrap`}>
+            {formatStatusText(project.status)}
           </span>
         </div>
 
@@ -109,24 +91,21 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
           
           {/* Progress Status Text */}
           <div className="text-xs text-gray-500 font-medium text-center">
-            {project.progress === 100 ? '🎉 Project Completed!' : 
-             project.progress >= 75 ? '🔥 Almost there!' :
-             project.progress >= 50 ? '⚡ Good progress' :
-             project.progress >= 25 ? '📈 Making progress' : '🚀 Getting started'}
+            {progressStatusText}
           </div>
         </div>
 
         {/* Task Stats */}
-        {totalTasks > 0 && (
+        {total > 0 && (
           <div className="mb-4 bg-gray-50 rounded-lg p-3">
             <div className="flex justify-between items-center text-xs">
               <div className="flex items-center gap-2">
                 <FaCheck className="text-green-500 text-sm" />
-                <span className="font-medium text-gray-700">{completedTasks} completed</span>
+                <span className="font-medium text-gray-700">{completed} completed</span>
               </div>
               <div className="flex items-center gap-2">
                 <FaCircle className="text-blue-500 text-sm" />
-                <span className="font-medium text-gray-700">{pendingTasks} pending</span>
+                <span className="font-medium text-gray-700">{incomplete} pending</span>
               </div>
             </div>
           </div>
@@ -175,7 +154,7 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
               <div className="flex items-center gap-2">
                 <FaRegEye className="text-base" />
                 <span>
-                  View Tasks ({totalTasks})
+                  View Tasks ({total})
                 </span>
               </div>
             </button>
