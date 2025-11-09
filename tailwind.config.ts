@@ -12,7 +12,7 @@ const config: Config = {
         // Main theme colors
         background: "#ffffff",
         foreground: "#000000",
-        "primary": "#04A8F6",
+        "primary": "#2B35A0",
         "secondary": "#B6B7BB",
         "scons": "#00C5FF",
         

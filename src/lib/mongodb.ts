@@ -1,7 +1,7 @@
 import { MongoClient, MongoClientOptions } from 'mongodb';
 
 const uri = process.env.MONGODB_URI as string;
-const dbName = process.env.MONGODB_DB_NAME || 'pieco'; // Add this line
+const dbName = process.env.MONGODB_DB_NAME || 'vznx'; // Add this line
 
 if (!uri) {
   throw new Error('Please define the MONGODB_URI environment variable in .env.local');
