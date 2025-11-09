@@ -5,11 +5,11 @@ import { BaseProject } from '@/types/project';
 import { FaTrash, FaUser, FaCalendar, FaClock, FaCheck, FaCircle } from 'react-icons/fa';
 import { FaRegEye } from "react-icons/fa";
 import { useRouter } from 'next/navigation';
-import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { formatDateTime } from '@/utils/dateFormatter';
 import { getStatusColors, formatStatusText } from '@/utils/projectStatus';
-import { getProgressColor, getProgressStatusText, generateProgressData } from '@/utils/projectProgress';
+import { getProgressColor, getProgressStatusText } from '@/utils/projectProgress';
 import { getTaskStats } from '@/utils/taskStats';
+import ProgressPieChart from '@/components/charts/ProgressPieChart';
 
 interface ProjectCardProps {
   project: BaseProject;
@@ -22,7 +22,6 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
   // Use utility functions
   const statusColors = getStatusColors(project.status);
   const progressColor = getProgressColor(project.progress);
-  const progressData = generateProgressData(project.progress);
   const progressStatusText = getProgressStatusText(project.progress);
   const { total, completed, incomplete } = getTaskStats(project.taskStats);
 
@@ -30,27 +29,12 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
     <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group relative min-h-[320px]">
       
       {/* Circular Progress Background - Centered */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-10 group-hover:opacity-20 transition-opacity duration-300">
-        <div className="w-48 h-48">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart>
-              <Pie
-                data={progressData}
-                cx="50%"
-                cy="50%"
-                innerRadius={35}
-                outerRadius={70}
-                paddingAngle={0}
-                dataKey="value"
-                startAngle={90}
-                endAngle={450}
-              >
-                <Cell key="completed" fill={progressColor} />
-                <Cell key="remaining" fill="#E5E7EB" />
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+      <div className="absolute inset-0 flex items-center justify-center opacity-10 group-hover:opacity-50 transition-opacity duration-300">
+        <ProgressPieChart 
+          progress={project.progress} 
+          size="md"
+          className="opacity-90"
+        />
       </div>
 
       {/* Content */}
