@@ -1,33 +1,44 @@
-import { FaArrowRightLong } from "react-icons/fa6";
+'use client';
 
 interface HeadingProps {
   title: string;
-  showArrow?: boolean;
-  arrowLink?: string;
-  marginBottom?: string;
-  justify?: 'start' | 'center' | 'end' | 'between' | 'around' | 'evenly';
+  titleColor?: string;
+  
+  // style-related props
+  titleSize?: string;
+  titleWeight?: string;
+  titleMargin?: string;
+  titleLineHeight?: string;
+  titleAlign?: string;
+
+  className?: string;
 }
 
-export default function Heading({
+const Heading = ({
   title,
-  showArrow = false,
-  arrowLink,
-  justify = 'center',
-  marginBottom = 'mb-6'
-}: HeadingProps) {
+  titleColor = 'text-white',
+
+  // style-related props
+  titleSize = 'text-4xl',
+  titleWeight = 'font-bold',
+  titleMargin = 'mb-4',
+  titleLineHeight = '1.0',
+  titleAlign = 'text-center',
+
+  className = '',
+}: HeadingProps) => {
   return (
-    <div className={`flex gap-x-4 items-center justify-${justify} ${marginBottom}`}>
-      <h1 className="text-3xl font-bold text-gray-800">{title}</h1>
-      {showArrow && arrowLink && (
-        <a
-          href={arrowLink}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 bg-black border border-primary text-white px-3 py-1.5 rounded-full text-xs font-semibold transition-colors duration-200 ease-in-out hover:bg-primary hover:text-white hover:border-primary"
+    <div className={className}>
+      {title && (
+        <h1
+          className={`${titleSize} ${titleWeight} ${titleAlign} ${titleColor} ${titleMargin}`}
+          style={{ lineHeight: titleLineHeight }}
         >
-          View All <FaArrowRightLong />
-        </a>
+          {title}
+        </h1>
       )}
     </div>
   );
-}
+};
+
+export default Heading;

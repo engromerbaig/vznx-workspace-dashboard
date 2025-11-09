@@ -11,6 +11,7 @@ const config: Config = {
       colors: {
         // Main theme colors
         background: "#ffffff",
+        dark:"#1A1A1A",
         foreground: "#000000",
         "primary": "#2B35A0",
         "secondary": "#B6B7BB",

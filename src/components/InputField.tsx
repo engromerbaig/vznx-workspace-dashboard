@@ -39,7 +39,7 @@ export default function InputField({
   return (
     <div className="space-y-2">
       {/* Label */}
-      <label className="block text-sm font-medium text-gray-700">
+      <label className="block text-sm font-medium text-white">
         {label}
         {required && <span className="text-red-500 ml-1">*</span>}
       </label>
@@ -66,7 +66,7 @@ export default function InputField({
           <button
             type="button"
             onClick={togglePasswordVisibility}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 rounded-full p-1"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-white hover:text-white transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 rounded-full p-1"
           >
             {showPassword ? (
               <FaEyeSlash className="w-5 h-5" />
