@@ -1,4 +1,4 @@
-// src/app/api/projects/[id]/tasks/route.ts
+// src/app/api/projects/[slug]/tasks/route.ts
 import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getDatabase } from '@/lib/mongodb';
@@ -39,16 +39,30 @@ async function updateProjectTaskStats(projectId: string) {
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> } // params is now a Promise
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { id } = await params; // Await the params first
+    const { slug } = await params; // Await the slug from params
     const db = await getDatabase();
     
+    // First get the project by slug to get its ID
+    const project = await db.collection('projects').findOne({ 
+      slug: slug 
+    });
+
+    if (!project) {
+      return NextResponse.json(
+        { status: 'error', message: 'Project not found' },
+        { status: 404 }
+      );
+    }
+
+    const projectId = project._id.toString();
+
     // Use aggregation to get tasks with populated user info
     const tasks = await db.collection('tasks').aggregate([
       {
-        $match: { projectId: id } // Use the awaited id
+        $match: { projectId: projectId }
       },
       {
         $lookup: {
@@ -124,10 +138,10 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ id: string }> } // params is now a Promise
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { id } = await params; // Await the params first
+    const { slug } = await params; // Await the slug from params
     const currentUser = await getCurrentUser();
     
     if (!currentUser) {
@@ -157,8 +171,10 @@ export async function POST(
     }
 
     const db = await getDatabase();
-    const project = await db.collection('projects').findOne({
-      _id: new ObjectId(id) // Use the awaited id
+    
+    // First get the project by slug to get its ID
+    const project = await db.collection('projects').findOne({ 
+      slug: slug 
     });
 
     if (!project) {
@@ -168,10 +184,11 @@ export async function POST(
       );
     }
 
+    const projectId = project._id.toString();
     const now = new Date();
     
     const task = {
-      projectId: id, // Use the awaited id
+      projectId: projectId,
       name: name.trim(),
       assignedTo: assignedTo.trim(),
       status: 'incomplete' as const,
@@ -184,7 +201,7 @@ export async function POST(
     const result = await db.collection('tasks').insertOne(task);
     
     // Update project task stats
-    await updateProjectTaskStats(id); // Use the awaited id
+    await updateProjectTaskStats(projectId);
 
     // Get the created task with populated user info
     const newTask = await db.collection('tasks').aggregate([

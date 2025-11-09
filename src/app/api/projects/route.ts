@@ -4,8 +4,9 @@ import { getDatabase } from '@/lib/mongodb';
 import { BaseProject } from '@/types/project';
 import { getCurrentUser } from '@/lib/server/auth-utils';
 import { ObjectId } from 'mongodb';
+import { slugify, generateUniqueSlug } from '@/utils/slugify';
 
-// src/app/api/projects/route.ts (Updated GET)
+// ✅ GET — Fetch all projects (now using slug instead of _id)
 export async function GET() {
   try {
     const db = await getDatabase();
@@ -28,12 +29,13 @@ export async function GET() {
       {
         $project: {
           name: 1,
+          slug: 1, // ✅ Include slug
           status: 1,
           progress: 1,
           description: 1,
           createdAt: 1,
           updatedAt: 1,
-          taskStats: 1, // Use stored taskStats which is now updated in real-time
+          taskStats: 1, // ✅ Use stored stats (real-time updated elsewhere)
           createdBy: {
             $cond: {
               if: { $ne: ['$creator', null] },
@@ -51,11 +53,12 @@ export async function GET() {
     const formattedProjects: BaseProject[] = projects.map(project => ({
       _id: project._id.toString(),
       name: project.name,
+      slug: project.slug,
       status: project.status,
       progress: project.progress,
       description: project.description,
       createdBy: project.createdBy,
-      taskStats: project.taskStats, // This is now consistent and real-time
+      taskStats: project.taskStats,
       createdAt: project.createdAt.toISOString(),
       updatedAt: project.updatedAt.toISOString()
     }));
@@ -73,6 +76,7 @@ export async function GET() {
   }
 }
 
+// ✅ POST — Create new project with unique slug
 export async function POST(request: Request) {
   try {
     const currentUser = await getCurrentUser();
@@ -100,23 +104,33 @@ export async function POST(request: Request) {
     const db = await getDatabase();
     const now = new Date();
     
+    // ✅ Generate unique slug
+    const baseSlug = slugify(name);
+    const existingProjects = await db.collection('projects')
+      .find({ slug: { $regex: `^${baseSlug}` } })
+      .project({ slug: 1 })
+      .toArray();
+    const existingSlugs = existingProjects.map(p => p.slug);
+    const uniqueSlug = generateUniqueSlug(baseSlug, existingSlugs);
+
+    // ✅ Insert project
     const project = {
       name: name.trim(),
+      slug: uniqueSlug,
       description: description?.trim(),
       status,
       progress: 0,
-      createdBy: new ObjectId(currentUser._id), // Store user ID as ObjectId
+      taskStats: { total: 0, completed: 0, incomplete: 0 }, // ✅ Default stats
+      createdBy: new ObjectId(currentUser._id),
       createdAt: now,
       updatedAt: now
     };
 
     const result = await db.collection('projects').insertOne(project);
     
-    // Get the created project with populated creator info
+    // ✅ Fetch created project with username
     const newProject = await db.collection('projects').aggregate([
-      {
-        $match: { _id: result.insertedId }
-      },
+      { $match: { _id: result.insertedId } },
       {
         $lookup: {
           from: 'users',
@@ -134,9 +148,11 @@ export async function POST(request: Request) {
       {
         $project: {
           name: 1,
+          slug: 1,
           status: 1,
           progress: 1,
           description: 1,
+          taskStats: 1,
           createdAt: 1,
           updatedAt: 1,
           createdBy: {
@@ -157,10 +173,12 @@ export async function POST(request: Request) {
     const formattedProject: BaseProject = {
       _id: newProject._id.toString(),
       name: newProject.name,
+      slug: newProject.slug,
       status: newProject.status,
       progress: newProject.progress,
       description: newProject.description,
       createdBy: newProject.createdBy,
+      taskStats: newProject.taskStats,
       createdAt: newProject.createdAt.toISOString(),
       updatedAt: newProject.updatedAt.toISOString()
     };

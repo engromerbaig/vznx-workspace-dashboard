@@ -1,4 +1,4 @@
-// src/app/projects/[id]/page.tsx
+// src/app/projects/[slug]/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,14 +8,16 @@ import { BaseTask } from '@/types/task';
 import TaskItem from '@/components/TaskItem';
 import AddTaskModal from '@/components/AddTaskModal';
 import PrimaryButton from '@/components/PrimaryButton';
-import { FaPlus, FaArrowLeft } from 'react-icons/fa';
+import { FaPlus, FaArrowLeft, FaCheck, FaCircle } from 'react-icons/fa';
 import { FaSync } from 'react-icons/fa';
 import { createTask } from '@/lib/actions/taskActions';
+import { formatDateTime } from '@/utils/dateFormatter';
+import { getStatusColors } from '@/utils/projectStatus';
 
 export default function ProjectDetailsPage() {
   const params = useParams();
   const router = useRouter();
-  const projectId = params.id as string;
+  const projectSlug = params.slug as string;
 
   const [project, setProject] = useState<BaseProject | null>(null);
   const [tasks, setTasks] = useState<BaseTask[]>([]);
@@ -23,42 +25,49 @@ export default function ProjectDetailsPage() {
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch project and tasks
   const fetchProjectData = async () => {
     try {
       setIsRefreshing(true);
+      setError(null);
       
-      // Fetch project with real-time stats (cache bust with timestamp)
-      const projectRes = await fetch(`/api/projects/${projectId}?t=${Date.now()}`);
+      // Fetch project by slug
+      const projectRes = await fetch(`/api/projects/${projectSlug}?t=${Date.now()}`);
       if (!projectRes.ok) {
+        if (projectRes.status === 404) {
+          throw new Error('Project not found');
+        }
         throw new Error('Failed to fetch project');
       }
+      
       const projectData = await projectRes.json();
 
       if (projectData.status === 'success') {
         setProject(projectData.project);
+        
+        // ✅ FIXED: Use the slug-based tasks endpoint
+        const tasksRes = await fetch(`/api/projects/${projectSlug}/tasks?t=${Date.now()}`);
+        if (!tasksRes.ok) {
+          throw new Error('Failed to fetch tasks');
+        }
+        
+        const tasksData = await tasksRes.json();
+
+        if (tasksData.status === 'success') {
+          setTasks(tasksData.tasks);
+        } else {
+          throw new Error(tasksData.message || 'Failed to fetch tasks');
+        }
       } else {
         throw new Error(projectData.message || 'Failed to fetch project');
-      }
-
-      // Fetch tasks (cache bust with timestamp)
-      const tasksRes = await fetch(`/api/projects/${projectId}/tasks?t=${Date.now()}`);
-      if (!tasksRes.ok) {
-        throw new Error('Failed to fetch tasks');
-      }
-      const tasksData = await tasksRes.json();
-
-      if (tasksData.status === 'success') {
-        setTasks(tasksData.tasks);
-      } else {
-        throw new Error(tasksData.message || 'Failed to fetch tasks');
       }
 
       setLastUpdated(new Date());
     } catch (error) {
       console.error('Failed to fetch project data:', error);
-      // You might want to show an error toast here
+      setError(error instanceof Error ? error.message : 'An error occurred');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -66,26 +75,27 @@ export default function ProjectDetailsPage() {
   };
 
   useEffect(() => {
-    if (projectId) {
+    if (projectSlug) {
       fetchProjectData();
     }
-  }, [projectId]);
+  }, [projectSlug]);
 
   // Add new task using server action
   const handleAddTask = async (taskData: { name: string; assignedTo: string }) => {
     try {
-      const result = await createTask(projectId, taskData);
+      if (!project) return;
+      
+      const result = await createTask(project._id, taskData);
       
       if (result.success) {
         setShowAddTaskModal(false);
-        // Refresh data to get updated stats
         await fetchProjectData();
       } else {
         throw new Error(result.error || 'Failed to create task');
       }
     } catch (error) {
       console.error('Failed to create task:', error);
-      // You might want to show an error toast here
+      setError(error instanceof Error ? error.message : 'Failed to create task');
     }
   };
 
@@ -96,14 +106,13 @@ export default function ProjectDetailsPage() {
 
   // Handle task updates (for TaskItem callback)
   const handleTaskUpdate = () => {
-    // Refresh project data to get updated stats
     fetchProjectData();
   };
 
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           <div className="animate-pulse">
             {/* Back button skeleton */}
             <div className="h-6 bg-gray-200 rounded w-24 mb-6"></div>
@@ -150,15 +159,34 @@ export default function ProjectDetailsPage() {
     );
   }
 
+  if (error && !project) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-6">
+        <div className="max-w-6xl mx-auto text-center">
+          <div className="bg-white rounded-lg shadow-md p-8 max-w-md mx-auto">
+            <div className="text-red-500 text-6xl mb-4">❌</div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-4">Project Not Found</h1>
+            <p className="text-gray-600 mb-6">{error}</p>
+            <PrimaryButton onClick={() => router.push('/dashboard')}>
+              Back to Dashboard
+            </PrimaryButton>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!project) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Project Not Found</h1>
-          <p className="text-gray-600 mb-6">The project you're looking for doesn't exist or you don't have access to it.</p>
-          <PrimaryButton onClick={() => router.push('/dashboard')}>
-            Back to Dashboard
-          </PrimaryButton>
+        <div className="max-w-6xl mx-auto text-center">
+          <div className="bg-white rounded-lg shadow-md p-8 max-w-md mx-auto">
+            <h1 className="text-2xl font-bold text-gray-800 mb-4">Project Not Found</h1>
+            <p className="text-gray-600 mb-6">The project you're looking for doesn't exist or you don't have access to it.</p>
+            <PrimaryButton onClick={() => router.push('/dashboard')}>
+              Back to Dashboard
+            </PrimaryButton>
+          </div>
         </div>
       </div>
     );
@@ -169,14 +197,7 @@ export default function ProjectDetailsPage() {
   const pendingTasks = project.taskStats?.incomplete ?? 0;
   const progress = project.progress ?? 0;
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800';
-      case 'in-progress': return 'bg-blue-100 text-blue-800';
-      case 'planning': return 'bg-yellow-100 text-yellow-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
+  const statusColors = getStatusColors(project.status);
 
   const formatLastUpdated = (date: Date) => {
     return date.toLocaleTimeString('en-US', { 
@@ -186,23 +207,37 @@ export default function ProjectDetailsPage() {
     });
   };
 
+  const getProgressColor = (progress: number) => {
+    if (progress === 100) return 'bg-green-500';
+    if (progress >= 50) return 'bg-blue-500';
+    return 'bg-yellow-500';
+  };
+
+  const getProgressMessage = (progress: number) => {
+    if (progress === 100) return '🎉 Project Completed!';
+    if (progress >= 75) return '🔥 Almost there!';
+    if (progress >= 50) return '⚡ Good progress';
+    if (progress >= 25) return '📈 Making progress';
+    return '🚀 Getting started';
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
+      <div className="max-w-6xl mx-auto">
         
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <button
               onClick={() => router.push('/dashboard')}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors font-medium"
+              className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors font-medium self-start"
             >
               <FaArrowLeft className="text-sm" />
               Back to Projects
             </button>
             
             <div className="flex items-center gap-4">
-              <div className="text-xs text-gray-500">
+              <div className="text-xs text-gray-500 hidden sm:block">
                 Last updated: {formatLastUpdated(lastUpdated)}
               </div>
               <button
@@ -212,69 +247,75 @@ export default function ProjectDetailsPage() {
                 title="Refresh data"
               >
                 <FaSync className={`text-sm ${isRefreshing ? 'animate-spin' : ''}`} />
-                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                <span className="hidden sm:inline">
+                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                </span>
               </button>
             </div>
           </div>
           
           {/* Project Info Card */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <div className="flex justify-between items-start mb-4">
+          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
               <div className="flex-1">
-                <h1 className="text-3xl font-bold text-gray-800 mb-2">{project.name}</h1>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2 break-words">
+                  {project.name}
+                </h1>
                 {project.description && (
-                  <p className="text-gray-600 text-lg">{project.description}</p>
+                  <p className="text-gray-600 text-base sm:text-lg break-words">
+                    {project.description}
+                  </p>
                 )}
+                <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
+                  <span>Created: {formatDateTime(project.createdAt)}</span>
+                  <span>Updated: {formatDateTime(project.updatedAt)}</span>
+                </div>
               </div>
-              <span className={`px-4 py-2 rounded-full text-sm font-semibold ${getStatusColor(project.status)} whitespace-nowrap`}>
-                {project.status.replace('-', ' ').toUpperCase()}
-              </span>
+              <div className="flex flex-wrap gap-2">
+                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusColors.background} ${statusColors.text} whitespace-nowrap`}>
+                  {project.status.replace('-', ' ').toUpperCase()}
+                </span>
+                <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800 whitespace-nowrap">
+                  {project.slug}
+                </span>
+              </div>
             </div>
 
             {/* Progress Overview */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-              <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div className="text-2xl font-bold text-gray-800">{totalTasks}</div>
-                <div className="text-sm text-gray-600 font-medium">Total Tasks</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center mb-6">
+              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
+                <div className="text-xl sm:text-2xl font-bold text-gray-800">{totalTasks}</div>
+                <div className="text-xs sm:text-sm text-gray-600 font-medium">Total Tasks</div>
               </div>
-              <div className="bg-green-50 rounded-lg p-4 border border-green-200">
-                <div className="text-2xl font-bold text-green-600">{completedTasks}</div>
-                <div className="text-sm text-green-700 font-medium">Completed</div>
+              <div className="bg-green-50 rounded-lg p-3 sm:p-4 border border-green-200">
+                <div className="text-xl sm:text-2xl font-bold text-green-600">{completedTasks}</div>
+                <div className="text-xs sm:text-sm text-green-700 font-medium">Completed</div>
               </div>
-              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                <div className="text-2xl font-bold text-blue-600">{pendingTasks}</div>
-                <div className="text-sm text-blue-700 font-medium">Pending</div>
+              <div className="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-200">
+                <div className="text-xl sm:text-2xl font-bold text-blue-600">{pendingTasks}</div>
+                <div className="text-xs sm:text-sm text-blue-700 font-medium">Pending</div>
               </div>
-              <div className="bg-orange-50 rounded-lg p-4 border border-orange-200">
-                <div className="text-2xl font-bold text-orange-600">{progress}%</div>
-                <div className="text-sm text-orange-700 font-medium">Progress</div>
+              <div className="bg-orange-50 rounded-lg p-3 sm:p-4 border border-orange-200">
+                <div className="text-xl sm:text-2xl font-bold text-orange-600">{progress}%</div>
+                <div className="text-xs sm:text-sm text-orange-700 font-medium">Progress</div>
               </div>
             </div>
 
             {/* Progress Bar */}
             {totalTasks > 0 && (
-              <div className="mt-6">
+              <div className="mt-4 sm:mt-6">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-gray-700">Overall Progress</span>
                   <span className="text-sm font-bold text-gray-800">{progress}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
+                <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
                   <div 
-                    className="h-3 rounded-full transition-all duration-500 ease-out"
-                    style={{ 
-                      width: `${progress}%`,
-                      backgroundColor: 
-                        progress === 100 ? '#10B981' : 
-                        progress >= 50 ? '#3B82F6' : 
-                        '#F59E0B'
-                    }}
+                    className={`h-2 sm:h-3 rounded-full transition-all duration-500 ease-out ${getProgressColor(progress)}`}
+                    style={{ width: `${progress}%` }}
                   ></div>
                 </div>
                 <div className="text-xs text-gray-500 text-center mt-2 font-medium">
-                  {progress === 100 ? '🎉 Project Completed!' : 
-                   progress >= 75 ? '🔥 Almost there!' :
-                   progress >= 50 ? '⚡ Good progress' :
-                   progress >= 25 ? '📈 Making progress' : '🚀 Getting started'}
+                  {getProgressMessage(progress)}
                 </div>
               </div>
             )}
@@ -282,33 +323,49 @@ export default function ProjectDetailsPage() {
         </div>
 
         {/* Tasks Section */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           {/* Tasks Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-gray-800">Tasks</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Tasks</h2>
               <p className="text-gray-600 text-sm mt-1">
                 {totalTasks === 0 ? 'No tasks yet' : `${totalTasks} task${totalTasks !== 1 ? 's' : ''} in total`}
+                {totalTasks > 0 && (
+                  <span className="ml-2 text-xs text-gray-500">
+                    ({completedTasks} completed • {pendingTasks} pending)
+                  </span>
+                )}
               </p>
             </div>
-            <div className="flex items-center gap-3">
-             
+            <div className="flex items-center gap-2 sm:gap-3">
+       
               <PrimaryButton
                 onClick={() => setShowAddTaskModal(true)}
                 showIcon={true}
                 icon={FaPlus}
               >
-                Add Task
+                <span className="hidden sm:inline">Add Task</span>
+                <span className="sm:hidden">Add</span>
               </PrimaryButton>
             </div>
           </div>
 
+          {/* Error Alert */}
+          {error && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-2 text-red-800">
+                <FaCircle className="text-xs" />
+                <span className="text-sm font-medium">{error}</span>
+              </div>
+            </div>
+          )}
+
           {/* Tasks List */}
           {tasks.length === 0 ? (
-            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <div className="text-gray-400 text-6xl mb-4">📝</div>
-              <div className="text-gray-500 text-lg mb-4">No tasks yet</div>
-              <p className="text-gray-400 text-sm mb-6 max-w-md mx-auto">
+            <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <div className="text-gray-400 text-4xl sm:text-6xl mb-3 sm:mb-4">📝</div>
+              <div className="text-gray-500 text-lg mb-3 sm:mb-4">No tasks yet</div>
+              <p className="text-gray-400 text-sm mb-4 sm:mb-6 max-w-md mx-auto px-4">
                 Get started by adding your first task to this project. Tasks help you track progress and assign work to team members.
               </p>
               <PrimaryButton
@@ -334,17 +391,17 @@ export default function ProjectDetailsPage() {
           {/* Tasks Summary */}
           {tasks.length > 0 && (
             <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="flex justify-between items-center text-sm text-gray-600">
-                <span>
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm text-gray-600">
+                <span className="text-center sm:text-left">
                   Showing {tasks.length} task{tasks.length !== 1 ? 's' : ''}
                 </span>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center sm:justify-start gap-4">
                   <span className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <FaCheck className="text-green-500 text-xs" />
                     {completedTasks} completed
                   </span>
                   <span className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <FaCircle className="text-blue-500 text-xs" />
                     {pendingTasks} pending
                   </span>
                 </div>

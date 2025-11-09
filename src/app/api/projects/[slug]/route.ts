@@ -1,10 +1,11 @@
-// src/app/api/projects/[id]/route.ts
+// src/app/api/projects/[slug]/route.ts
 import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getDatabase } from '@/lib/mongodb';
 import { BaseProject } from '@/types/project';
 import { getCurrentUser } from '@/lib/server/auth-utils';
 import { TaskStatsService } from '@/lib/services/taskStatsService';
+import { slugify, generateUniqueSlug } from '@/utils/slugify';
 
 // Helper function to update project task statistics
 async function updateProjectTaskStats(projectId: string) {
@@ -40,15 +41,15 @@ async function updateProjectTaskStats(projectId: string) {
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { id } = await params; // Await params first
+    const { slug } = await params;
     const db = await getDatabase();
     
     const project = await db.collection('projects').aggregate([
       {
-        $match: { _id: new ObjectId(id) }
+        $match: { slug: slug }
       },
       {
         $lookup: {
@@ -100,6 +101,7 @@ export async function GET(
       {
         $project: {
           name: 1,
+          slug: 1,
           status: 1,
           progress: 1,
           description: 1,
@@ -125,16 +127,17 @@ export async function GET(
     }
 
     // Get real-time stats to ensure consistency
-    const realTimeStats = await TaskStatsService.getProjectStats(id);
+    const realTimeStats = await TaskStatsService.getProjectStats(project._id.toString());
     
     const formattedProject: BaseProject = {
       _id: project._id.toString(),
       name: project.name,
-      status: realTimeStats.status, // Use real-time status
-      progress: realTimeStats.progress, // Use real-time progress
+      slug: project.slug,
+      status: realTimeStats.status,
+      progress: realTimeStats.progress,
       description: project.description,
       createdBy: project.createdBy,
-      taskStats: realTimeStats, // Use real-time stats
+      taskStats: realTimeStats,
       createdAt: project.createdAt.toISOString(),
       updatedAt: project.updatedAt.toISOString()
     };
@@ -154,10 +157,10 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { id } = await params; // Await params first
+    const { slug } = await params;
     const currentUser = await getCurrentUser();
     
     if (!currentUser) {
@@ -170,9 +173,9 @@ export async function PUT(
     const updates = await request.json();
     const db = await getDatabase();
     
-    // First, verify the project exists
+    // First, verify the project exists by slug
     const project = await db.collection('projects').findOne({
-      _id: new ObjectId(id)
+      slug: slug
     });
 
     if (!project) {
@@ -182,13 +185,30 @@ export async function PUT(
       );
     }
 
-    const updateData = {
-      ...updates,
-      updatedAt: new Date()
-    };
+    // If name is being updated, generate a new slug
+    let updateData = { ...updates };
+    if (updates.name && updates.name !== project.name) {
+      const baseSlug = slugify(updates.name);
+      
+      // Check for existing slugs (excluding current project)
+      const existingProjects = await db.collection('projects')
+        .find({ 
+          slug: { $regex: `^${baseSlug}` },
+          _id: { $ne: project._id }
+        })
+        .project({ slug: 1 })
+        .toArray();
+      
+      const existingSlugs = existingProjects.map(p => p.slug);
+      const uniqueSlug = generateUniqueSlug(baseSlug, existingSlugs);
+      
+      updateData.slug = uniqueSlug;
+    }
+
+    updateData.updatedAt = new Date();
 
     const result = await db.collection('projects').updateOne(
-      { _id: new ObjectId(id) },
+      { slug: slug },
       { $set: updateData }
     );
 
@@ -202,7 +222,7 @@ export async function PUT(
     // Return updated project with populated info
     const updatedProject = await db.collection('projects').aggregate([
       {
-        $match: { _id: new ObjectId(id) }
+        $match: { _id: project._id }
       },
       {
         $lookup: {
@@ -254,6 +274,7 @@ export async function PUT(
       {
         $project: {
           name: 1,
+          slug: 1,
           status: 1,
           progress: 1,
           description: 1,
@@ -281,6 +302,7 @@ export async function PUT(
     const formattedProject: BaseProject = {
       _id: updatedProject._id.toString(),
       name: updatedProject.name,
+      slug: updatedProject.slug,
       status: updatedProject.status,
       progress: updatedProject.progress,
       description: updatedProject.description,
@@ -305,14 +327,29 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { id } = await params; // Await params first
+    const { slug } = await params;
     const db = await getDatabase();
     
+    // First get the project by slug to get its ID
+    const project = await db.collection('projects').findOne({
+      slug: slug
+    });
+
+    if (!project) {
+      return NextResponse.json(
+        { status: 'error', message: 'Project not found' },
+        { status: 404 }
+      );
+    }
+
+    const projectId = project._id.toString();
+
+    // Delete the project by slug
     const result = await db.collection('projects').deleteOne({
-      _id: new ObjectId(id)
+      slug: slug
     });
 
     if (result.deletedCount === 0) {
@@ -324,7 +361,7 @@ export async function DELETE(
 
     // Also delete all tasks associated with this project
     await db.collection('tasks').deleteMany({
-      projectId: id
+      projectId: projectId
     });
 
     return NextResponse.json({ 

@@ -8,11 +8,12 @@ export interface TaskStats {
 export interface BaseProject {
   _id: string;
   name: string;
+  slug: string; // Add slug field
   status: 'planning' | 'in-progress' | 'completed';
   progress: number;
   description?: string;
   createdBy: string;
-  taskStats?: TaskStats; // Make it optional for now
+  taskStats?: TaskStats;
   createdAt: string;
   updatedAt: string;
 }
@@ -26,6 +27,7 @@ export interface CreateProjectData {
 
 export interface UpdateProjectData {
   name?: string;
+  slug?: string; // Allow slug updates if needed
   status?: 'planning' | 'in-progress' | 'completed';
   progress?: number;
   description?: string;
