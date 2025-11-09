@@ -43,9 +43,9 @@ export default function AddProjectModal({ isOpen, onClose, onSubmit }: AddProjec
 
   return (
     <div className="fixed inset-0 bg-black/50 bg-opacity-50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-      <div className="bg-red-500 rounded-lg shadow-xl w-full max-w-md">
+      <div className="bg-black rounded-lg shadow-xl w-full max-w-md">
         <div className="p-6">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Create New Project</h2>
+          <h2 className="text-xl font-bold  mb-4">Create New Project</h2>
           
           <form onSubmit={handleSubmit} className="space-y-4">
             <InputField
@@ -59,7 +59,7 @@ export default function AddProjectModal({ isOpen, onClose, onSubmit }: AddProjec
             />
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium  mb-2">
                 Description (Optional)
               </label>
               <textarea
@@ -68,7 +68,7 @@ export default function AddProjectModal({ isOpen, onClose, onSubmit }: AddProjec
                 placeholder="Enter project description"
                 disabled={isSubmitting}
                 rows={3}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-secondary rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
               />
             </div>
 
