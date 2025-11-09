@@ -17,6 +17,7 @@ export async function GET() {
       status: project.status,
       progress: project.progress,
       description: project.description,
+      createdBy: project.createdBy || 'system', // Add createdBy with fallback
       createdAt: project.createdAt.toISOString(),
       updatedAt: project.updatedAt.toISOString()
     }));
@@ -34,14 +35,13 @@ export async function GET() {
   }
 }
 
-
-// Add to the same route.ts file
 export async function POST(request: Request) {
   try {
-    const { name, description, status = 'planning' }: { 
+    const { name, description, status = 'planning', createdBy = 'system' }: { 
       name: string; 
       description?: string; 
-      status?: 'planning' | 'in-progress' | 'completed' 
+      status?: 'planning' | 'in-progress' | 'completed';
+      createdBy?: string;
     } = await request.json();
 
     if (!name || name.trim() === '') {
@@ -59,6 +59,7 @@ export async function POST(request: Request) {
       description: description?.trim(),
       status,
       progress: 0,
+      createdBy: createdBy.trim(),
       createdAt: now,
       updatedAt: now
     };
@@ -71,6 +72,7 @@ export async function POST(request: Request) {
       status: project.status,
       progress: project.progress,
       description: project.description,
+      createdBy: project.createdBy,
       createdAt: project.createdAt.toISOString(),
       updatedAt: project.updatedAt.toISOString()
     };
@@ -88,5 +90,3 @@ export async function POST(request: Request) {
     );
   }
 }
-
-

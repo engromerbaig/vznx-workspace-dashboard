@@ -1,5 +1,5 @@
 // src/lib/models/Project.ts
-import { Schema, models, model, InferSchemaType } from 'mongoose';
+import { Schema, models, model, InferSchemaType, Types } from 'mongoose';
 
 const projectSchema = new Schema({
   name: { 
@@ -23,6 +23,11 @@ const projectSchema = new Schema({
   description: { 
     type: String, 
     trim: true 
+  },
+  createdBy: {
+    type: String,
+    required: true,
+    default: 'system'
   }
 }, { 
   timestamps: true 

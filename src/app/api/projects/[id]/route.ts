@@ -27,6 +27,7 @@ export async function GET(
       status: project.status,
       progress: project.progress,
       description: project.description,
+      createdBy: project.createdBy || 'system', // Add createdBy with fallback
       createdAt: project.createdAt.toISOString(),
       updatedAt: project.updatedAt.toISOString()
     };
@@ -87,6 +88,7 @@ export async function PUT(
       status: updatedProject.status,
       progress: updatedProject.progress,
       description: updatedProject.description,
+      createdBy: updatedProject.createdBy || 'system', // Add createdBy with fallback
       createdAt: updatedProject.createdAt.toISOString(),
       updatedAt: updatedProject.updatedAt.toISOString()
     };

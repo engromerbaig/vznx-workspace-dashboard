@@ -2,10 +2,11 @@
 'use client';
 
 import { BaseProject } from '@/types/project';
-import { FaTrash } from 'react-icons/fa';
+import { FaTrash, FaUser, FaCalendar, FaClock } from 'react-icons/fa';
 import { FaRegEye } from "react-icons/fa";
 import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
+import { formatDate } from '@/utils/dateFormatter';
 
 interface ProjectCardProps {
   project: BaseProject;
@@ -30,6 +31,7 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
     return '#F59E0B'; // yellow-500
   };
 
+ 
   // Data for the circular progress chart
   const progressData = [
     { name: 'Completed', value: project.progress },
@@ -39,11 +41,11 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
   const progressColor = getProgressColor(project.progress);
 
   return (
-    <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group relative min-h-[280px]">
+    <div className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group relative min-h-[320px]">
       
       {/* Circular Progress Background - Centered */}
       <div className="absolute inset-0 flex items-center justify-center opacity-10 group-hover:opacity-20 transition-opacity duration-300">
-        <div className="w-48 h-48"> {/* Increased size for better visibility */}
+        <div className="w-48 h-48">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -70,7 +72,7 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
         
         {/* Header with Status */}
         <div className="flex justify-between items-start mb-4">
-          <h3 className="text-xl font-bold text-gray-800 truncate flex-1 pr-3">{project.name}</h3>
+          <h3 className="text-xl font-bold text-gray-800 truncate uppercase flex-1 pr-3">{project.name}</h3>
           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(project.status)} whitespace-nowrap`}>
             {project.status.replace('-', ' ')}
           </span>
@@ -78,13 +80,13 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
 
         {/* Description */}
         {project.description && (
-          <p className="text-gray-600 text-sm mb-4 line-clamp-3 leading-relaxed flex-grow">
+          <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">
             {project.description}
           </p>
         )}
 
         {/* Progress Section */}
-        <div className="mt-auto">
+        <div className="mb-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-sm font-medium text-gray-700">Progress</span>
             <span className="text-2xl font-bold text-gray-800">{project.progress}%</span>
@@ -110,23 +112,52 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex justify-between items-center pt-4 mt-4 border-t border-gray-100">
-          <button
-            onClick={() => router.push(`/projects/${project._id}`)}
-            className="flex items-center gap-2 cursor-pointer text-primary hover:text-primary/80 hover:bg-primary/10 px-2 py-2 rounded-md transition-colors font-semibold text-sm"
-          >
-            <FaRegEye className="text-base" />
-            View Tasks
-          </button>
-          
-          <button
-            onClick={() => onDelete(project._id)}
-            className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors hover:scale-110"
-            title="Delete project"
-          >
-            <FaTrash className="text-sm" />
-          </button>
+        {/* Project Metadata - Bottom Section */}
+        <div className="mt-auto pt-4 border-t border-gray-100">
+          <div className="grid grid-cols-3 gap-4 text-xs text-gray-500 mb-3">
+            {/* Created By */}
+            <div className="flex items-center gap-1">
+              <FaUser className="text-gray-400 flex-shrink-0" />
+              <span className="truncate" title={`Created by ${project.createdBy}`}>
+                {project.createdBy}
+              </span>
+            </div>
+
+            {/* Created Date */}
+            <div className="flex items-center gap-1">
+              <FaCalendar className="text-gray-400 flex-shrink-0" />
+              <span title={new Date(project.createdAt).toLocaleDateString()}>
+                {formatDate(project.createdAt)}
+              </span>
+            </div>
+
+            {/* Last Updated */}
+            <div className="flex items-center gap-1">
+              <FaClock className="text-gray-400 flex-shrink-0" />
+              <span title={new Date(project.updatedAt).toLocaleDateString()}>
+                {formatDate(project.updatedAt)}
+              </span>
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-between items-center">
+            <button
+              onClick={() => router.push(`/projects/${project._id}`)}
+              className="flex items-center gap-2 cursor-pointer text-primary hover:text-primary/80 hover:bg-primary/10 px-2 py-2 rounded-md transition-colors font-semibold text-sm"
+            >
+              <FaRegEye className="text-base" />
+              View Tasks
+            </button>
+            
+            <button
+              onClick={() => onDelete(project._id)}
+              className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors hover:scale-110"
+              title="Delete project"
+            >
+              <FaTrash className="text-sm" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
