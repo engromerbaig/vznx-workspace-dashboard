@@ -4,6 +4,7 @@ import { ObjectId } from 'mongodb';
 import { getDatabase } from '@/lib/mongodb';
 import { BaseProject } from '@/types/project';
 import { getCurrentUser } from '@/lib/server/auth-utils';
+import { TaskStatsService } from '@/lib/services/taskStatsService';
 
 // Helper function to update project task statistics
 async function updateProjectTaskStats(projectId: string) {
@@ -63,39 +64,6 @@ export async function GET(
         }
       },
       {
-        $lookup: {
-          from: 'tasks',
-          localField: '_id',
-          foreignField: 'projectId',
-          as: 'projectTasks'
-        }
-      },
-      {
-        $addFields: {
-          taskStats: {
-            total: { $size: '$projectTasks' },
-            completed: {
-              $size: {
-                $filter: {
-                  input: '$projectTasks',
-                  as: 'task',
-                  cond: { $eq: ['$$task.status', 'complete'] }
-                }
-              }
-            },
-            incomplete: {
-              $size: {
-                $filter: {
-                  input: '$projectTasks',
-                  as: 'task',
-                  cond: { $eq: ['$$task.status', 'incomplete'] }
-                }
-              }
-            }
-          }
-        }
-      },
-      {
         $project: {
           name: 1,
           status: 1,
@@ -122,14 +90,17 @@ export async function GET(
       );
     }
 
+    // Get real-time stats to ensure consistency
+    const realTimeStats = await TaskStatsService.getProjectStats(params.id);
+    
     const formattedProject: BaseProject = {
       _id: project._id.toString(),
       name: project.name,
-      status: project.status,
-      progress: project.progress,
+      status: realTimeStats.status, // Use real-time status
+      progress: realTimeStats.progress, // Use real-time progress
       description: project.description,
       createdBy: project.createdBy,
-      taskStats: project.taskStats, // Include taskStats
+      taskStats: realTimeStats, // Use real-time stats
       createdAt: project.createdAt.toISOString(),
       updatedAt: project.updatedAt.toISOString()
     };

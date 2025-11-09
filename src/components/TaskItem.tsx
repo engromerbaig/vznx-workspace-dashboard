@@ -1,4 +1,4 @@
-// src/components/TaskItem.tsx
+// src/components/TaskItem.tsx (Updated)
 'use client';
 
 import { BaseTask } from '@/types/task';
@@ -6,19 +6,46 @@ import { FaTrash, FaCheck, FaCircle, FaUser, FaClock, FaEdit } from 'react-icons
 import { FaCalendar } from 'react-icons/fa';
 import { formatDateTime } from '@/utils/dateFormatter';
 import { useState } from 'react';
+import { updateTaskStatus, deleteTask } from '@/lib/actions/taskActions';
 
 interface TaskItemProps {
   task: BaseTask;
-  onUpdate: (taskId: string, updates: Partial<BaseTask>) => void;
-  onDelete: (taskId: string) => void;
+  onTaskUpdate?: () => void; // Optional callback for parent component
 }
 
-export default function TaskItem({ task, onUpdate, onDelete }: TaskItemProps) {
+export default function TaskItem({ task, onTaskUpdate }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const toggleStatus = () => {
-    const newStatus = task.status === 'complete' ? 'incomplete' : 'complete';
-    onUpdate(task._id, { status: newStatus });
+  const toggleStatus = async () => {
+    if (isUpdating) return;
+    
+    setIsUpdating(true);
+    try {
+      const newStatus = task.status === 'complete' ? 'incomplete' : 'complete';
+      const result = await updateTaskStatus(task._id, newStatus);
+      
+      if (result.success && onTaskUpdate) {
+        onTaskUpdate(); // Trigger parent refresh if needed
+      }
+    } catch (error) {
+      console.error('Failed to update task:', error);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this task?')) return;
+
+    try {
+      const result = await deleteTask(task._id);
+      if (result.success && onTaskUpdate) {
+        onTaskUpdate(); // Trigger parent refresh
+      }
+    } catch (error) {
+      console.error('Failed to delete task:', error);
+    }
   };
 
   const toggleExpand = () => {
@@ -28,18 +55,19 @@ export default function TaskItem({ task, onUpdate, onDelete }: TaskItemProps) {
   return (
     <div className={`bg-white rounded-lg shadow-sm border transition-all duration-300 ${
       task.status === 'complete' ? 'border-green-200 bg-green-50' : 'border-gray-200 hover:border-blue-300'
-    }`}>
+    } ${isUpdating ? 'opacity-50' : ''}`}>
       <div className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
             {/* Checkbox Toggle */}
             <button
               onClick={toggleStatus}
+              disabled={isUpdating}
               className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
                 task.status === 'complete' 
                   ? 'bg-green-500 border-green-500 text-white shadow-sm' 
                   : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
-              }`}
+              } ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             >
               {task.status === 'complete' && <FaCheck className="text-xs" />}
             </button>
@@ -70,7 +98,7 @@ export default function TaskItem({ task, onUpdate, onDelete }: TaskItemProps) {
               <FaEdit className="text-sm" />
             </button>
             <button
-              onClick={() => onDelete(task._id)}
+              onClick={handleDelete}
               className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
               title="Delete task"
             >

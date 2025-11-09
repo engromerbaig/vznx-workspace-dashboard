@@ -5,6 +5,7 @@ import { BaseProject } from '@/types/project';
 import { getCurrentUser } from '@/lib/server/auth-utils';
 import { ObjectId } from 'mongodb';
 
+// src/app/api/projects/route.ts (Updated GET)
 export async function GET() {
   try {
     const db = await getDatabase();
@@ -25,39 +26,6 @@ export async function GET() {
         }
       },
       {
-        $lookup: {
-          from: 'tasks',
-          localField: '_id',
-          foreignField: 'projectId',
-          as: 'projectTasks'
-        }
-      },
-      {
-        $addFields: {
-          taskStats: {
-            total: { $size: '$projectTasks' },
-            completed: {
-              $size: {
-                $filter: {
-                  input: '$projectTasks',
-                  as: 'task',
-                  cond: { $eq: ['$$task.status', 'complete'] }
-                }
-              }
-            },
-            incomplete: {
-              $size: {
-                $filter: {
-                  input: '$projectTasks',
-                  as: 'task',
-                  cond: { $eq: ['$$task.status', 'incomplete'] }
-                }
-              }
-            }
-          }
-        }
-      },
-      {
         $project: {
           name: 1,
           status: 1,
@@ -65,7 +33,7 @@ export async function GET() {
           description: 1,
           createdAt: 1,
           updatedAt: 1,
-          taskStats: 1,
+          taskStats: 1, // Use stored taskStats which is now updated in real-time
           createdBy: {
             $cond: {
               if: { $ne: ['$creator', null] },
@@ -87,7 +55,7 @@ export async function GET() {
       progress: project.progress,
       description: project.description,
       createdBy: project.createdBy,
-      taskStats: project.taskStats,
+      taskStats: project.taskStats, // This is now consistent and real-time
       createdAt: project.createdAt.toISOString(),
       updatedAt: project.updatedAt.toISOString()
     }));
