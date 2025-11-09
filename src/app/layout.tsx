@@ -10,7 +10,6 @@ import ToastProvider from '@/components/ToastProvider';
 import AuthProviderWrapper from '@/components/AuthProviderWrapper';
 import { LogoutProvider } from '@/context/LogoutContext';
 import GlobalLogoutLoader from '@/components/GlobalLogoutLoader';
-import SessionTakeoverListener from '@/components/SessionTakeoverListener';
 
 // Initialize Poppins font
 const poppins = Poppins({
@@ -43,7 +42,6 @@ export default function RootLayout({
           <LogoutProvider>
             <AuthProviderWrapper>
               <GlobalLogoutLoader />
-              <SessionTakeoverListener />
               <Navbar />
               <ClientLayout>
                 <ToastProvider />
