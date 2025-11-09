@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getDatabase } from '@/lib/mongodb';
 import { BaseTask } from '@/types/task';
+import { getCurrentUser } from '@/lib/server/auth-utils';
 
 export async function GET(
   request: Request,
@@ -10,17 +11,67 @@ export async function GET(
 ) {
   try {
     const db = await getDatabase();
-    const tasks = await db.collection('tasks')
-      .find({ projectId: params.id })
-      .sort({ createdAt: -1 })
-      .toArray();
+    
+    // Use aggregation to get tasks with populated user info
+    const tasks = await db.collection('tasks').aggregate([
+      {
+        $match: { projectId: params.id }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'creator'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'lastModifiedBy',
+          foreignField: '_id',
+          as: 'modifier'
+        }
+      },
+      {
+        $unwind: {
+          path: '$creator',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $unwind: {
+          path: '$modifier',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          projectId: 1,
+          name: 1,
+          status: 1,
+          assignedTo: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          completedAt: 1,
+          createdBy: '$creator.username',
+          lastModifiedBy: '$modifier.username'
+        }
+      },
+      {
+        $sort: { createdAt: -1 }
+      }
+    ]).toArray();
 
     const formattedTasks: BaseTask[] = tasks.map(task => ({
       _id: task._id.toString(),
       projectId: task.projectId,
       name: task.name,
-      status: task.status as 'incomplete' | 'complete', // Add type assertion
+      status: task.status,
       assignedTo: task.assignedTo,
+      createdBy: task.createdBy || 'system',
+      lastModifiedBy: task.lastModifiedBy || task.createdBy || 'system',
+      completedAt: task.completedAt?.toISOString(),
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString()
     }));
@@ -43,6 +94,15 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
+    const currentUser = await getCurrentUser();
+    
+    if (!currentUser) {
+      return NextResponse.json(
+        { status: 'error', message: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const { name, assignedTo }: { 
       name: string; 
       assignedTo: string; 
@@ -62,7 +122,6 @@ export async function POST(
       );
     }
 
-    // Verify project exists
     const db = await getDatabase();
     const project = await db.collection('projects').findOne({
       _id: new ObjectId(params.id)
@@ -81,26 +140,72 @@ export async function POST(
       projectId: params.id,
       name: name.trim(),
       assignedTo: assignedTo.trim(),
-      status: 'incomplete' as const, // Add 'as const' to fix the type
+      status: 'incomplete' as const,
+      createdBy: new ObjectId(currentUser._id),
+      lastModifiedBy: new ObjectId(currentUser._id),
       createdAt: now,
       updatedAt: now
     };
 
     const result = await db.collection('tasks').insertOne(task);
     
-    const newTask: BaseTask = {
-      _id: result.insertedId.toString(),
-      projectId: task.projectId,
-      name: task.name,
-      status: task.status,
-      assignedTo: task.assignedTo,
-      createdAt: task.createdAt.toISOString(),
-      updatedAt: task.updatedAt.toISOString()
+    // Update project task stats
+    await updateProjectTaskStats(params.id);
+
+    // Get the created task with populated user info
+    const newTask = await db.collection('tasks').aggregate([
+      {
+        $match: { _id: result.insertedId }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'creator'
+        }
+      },
+      {
+        $unwind: {
+          path: '$creator',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          projectId: 1,
+          name: 1,
+          status: 1,
+          assignedTo: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          completedAt: 1,
+          createdBy: '$creator.username',
+          lastModifiedBy: '$creator.username'
+        }
+      }
+    ]).next();
+
+    if (!newTask) {
+      throw new Error('Failed to create task');
+    }
+
+    const formattedTask: BaseTask = {
+      _id: newTask._id.toString(),
+      projectId: newTask.projectId,
+      name: newTask.name,
+      status: newTask.status,
+      assignedTo: newTask.assignedTo,
+      createdBy: newTask.createdBy,
+      lastModifiedBy: newTask.lastModifiedBy,
+      completedAt: newTask.completedAt?.toISOString(),
+      createdAt: newTask.createdAt.toISOString(),
+      updatedAt: newTask.updatedAt.toISOString()
     };
 
     return NextResponse.json({ 
       status: 'success', 
-      task: newTask 
+      task: formattedTask 
     }, { status: 201 });
 
   } catch (error) {
@@ -110,4 +215,36 @@ export async function POST(
       { status: 500 }
     );
   }
+}
+
+// Helper function to update project task statistics
+async function updateProjectTaskStats(projectId: string) {
+  const db = await getDatabase();
+  
+  const tasks = await db.collection('tasks')
+    .find({ projectId })
+    .toArray();
+
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(task => task.status === 'complete').length;
+  const incompleteTasks = totalTasks - completedTasks;
+  
+  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  
+  // Update project progress and task stats
+  await db.collection('projects').updateOne(
+    { _id: new ObjectId(projectId) },
+    { 
+      $set: { 
+        progress,
+        status: progress === 100 ? 'completed' : progress > 0 ? 'in-progress' : 'planning',
+        taskStats: {
+          total: totalTasks,
+          completed: completedTasks,
+          incomplete: incompleteTasks
+        },
+        updatedAt: new Date()
+      }
+    }
+  );
 }

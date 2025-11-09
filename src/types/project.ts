@@ -1,4 +1,10 @@
 // src/types/project.ts
+export interface TaskStats {
+  total: number;
+  completed: number;
+  incomplete: number;
+}
+
 export interface BaseProject {
   _id: string;
   name: string;
@@ -6,6 +12,7 @@ export interface BaseProject {
   progress: number;
   description?: string;
   createdBy: string;
+  taskStats?: TaskStats; // Make it optional for now
   createdAt: string;
   updatedAt: string;
 }
@@ -23,4 +30,5 @@ export interface UpdateProjectData {
   progress?: number;
   description?: string;
   createdBy?: string;
+  taskStats?: TaskStats;
 }

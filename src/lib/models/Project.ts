@@ -25,9 +25,15 @@ const projectSchema = new Schema({
     trim: true 
   },
   createdBy: {
-    type: Schema.Types.ObjectId, // Store as ObjectId to reference User
+    type: Schema.Types.ObjectId,
     ref: 'User',
     required: true
+  },
+  // Task statistics for quick access
+  taskStats: {
+    total: { type: Number, default: 0 },
+    completed: { type: Number, default: 0 },
+    incomplete: { type: Number, default: 0 }
   }
 }, { 
   timestamps: true 

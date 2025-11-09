@@ -3,9 +3,10 @@ import { NextResponse } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getDatabase } from '@/lib/mongodb';
 import { BaseTask } from '@/types/task';
+import { getCurrentUser } from '@/lib/server/auth-utils';
 
-// Helper function to calculate project progress
-async function updateProjectProgress(projectId: string) {
+// Helper function to update project task statistics
+async function updateProjectTaskStats(projectId: string) {
   const db = await getDatabase();
   
   const tasks = await db.collection('tasks')
@@ -14,22 +15,26 @@ async function updateProjectProgress(projectId: string) {
 
   const totalTasks = tasks.length;
   const completedTasks = tasks.filter(task => task.status === 'complete').length;
+  const incompleteTasks = totalTasks - completedTasks;
   
   const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
   
-  // Update project progress
+  // Update project progress and task stats
   await db.collection('projects').updateOne(
     { _id: new ObjectId(projectId) },
     { 
       $set: { 
         progress,
-        status: progress === 100 ? 'completed' : 'in-progress',
+        status: progress === 100 ? 'completed' : progress > 0 ? 'in-progress' : 'planning',
+        taskStats: {
+          total: totalTasks,
+          completed: completedTasks,
+          incomplete: incompleteTasks
+        },
         updatedAt: new Date()
       }
     }
   );
-
-  return { progress, totalTasks, completedTasks };
 }
 
 export async function GET(
@@ -38,9 +43,54 @@ export async function GET(
 ) {
   try {
     const db = await getDatabase();
-    const task = await db.collection('tasks').findOne({
-      _id: new ObjectId(params.id)
-    });
+    
+    // Use aggregation to get task with populated user info
+    const task = await db.collection('tasks').aggregate([
+      {
+        $match: { _id: new ObjectId(params.id) }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'creator'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'lastModifiedBy',
+          foreignField: '_id',
+          as: 'modifier'
+        }
+      },
+      {
+        $unwind: {
+          path: '$creator',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $unwind: {
+          path: '$modifier',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          projectId: 1,
+          name: 1,
+          status: 1,
+          assignedTo: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          completedAt: 1,
+          createdBy: '$creator.username',
+          lastModifiedBy: '$modifier.username'
+        }
+      }
+    ]).next();
 
     if (!task) {
       return NextResponse.json(
@@ -55,6 +105,9 @@ export async function GET(
       name: task.name,
       status: task.status,
       assignedTo: task.assignedTo,
+      createdBy: task.createdBy || 'system',
+      lastModifiedBy: task.lastModifiedBy || task.createdBy || 'system',
+      completedAt: task.completedAt?.toISOString(),
       createdAt: task.createdAt.toISOString(),
       updatedAt: task.updatedAt.toISOString()
     };
@@ -77,10 +130,18 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    const currentUser = await getCurrentUser();
+    
+    if (!currentUser) {
+      return NextResponse.json(
+        { status: 'error', message: 'Unauthorized' },
+        { status: 401 }
+      );
+    }
+
     const updates = await request.json();
     const db = await getDatabase();
     
-    // Get current task to know the projectId
     const currentTask = await db.collection('tasks').findOne({
       _id: new ObjectId(params.id)
     });
@@ -94,8 +155,18 @@ export async function PUT(
 
     const updateData = {
       ...updates,
+      lastModifiedBy: new ObjectId(currentUser._id),
       updatedAt: new Date()
     };
+
+    // If status is being changed to complete, set completedAt
+    if (updates.status === 'complete' && currentTask.status !== 'complete') {
+      updateData.completedAt = new Date();
+    }
+    // If status is being changed to incomplete, clear completedAt
+    else if (updates.status === 'incomplete' && currentTask.status === 'complete') {
+      updateData.completedAt = null;
+    }
 
     const result = await db.collection('tasks').updateOne(
       { _id: new ObjectId(params.id) },
@@ -109,15 +180,56 @@ export async function PUT(
       );
     }
 
-    // If task status changed, update project progress
-    if (updates.status) {
-      await updateProjectProgress(currentTask.projectId);
-    }
+    // Update project progress and task stats
+    await updateProjectTaskStats(currentTask.projectId);
 
-    // Return updated task
-    const updatedTask = await db.collection('tasks').findOne({
-      _id: new ObjectId(params.id)
-    });
+    // Return updated task with populated user info
+    const updatedTask = await db.collection('tasks').aggregate([
+      {
+        $match: { _id: new ObjectId(params.id) }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'creator'
+        }
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'lastModifiedBy',
+          foreignField: '_id',
+          as: 'modifier'
+        }
+      },
+      {
+        $unwind: {
+          path: '$creator',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $unwind: {
+          path: '$modifier',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          projectId: 1,
+          name: 1,
+          status: 1,
+          assignedTo: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          completedAt: 1,
+          createdBy: '$creator.username',
+          lastModifiedBy: '$modifier.username'
+        }
+      }
+    ]).next();
 
     if (!updatedTask) {
       return NextResponse.json(
@@ -132,6 +244,9 @@ export async function PUT(
       name: updatedTask.name,
       status: updatedTask.status,
       assignedTo: updatedTask.assignedTo,
+      createdBy: updatedTask.createdBy,
+      lastModifiedBy: updatedTask.lastModifiedBy,
+      completedAt: updatedTask.completedAt?.toISOString(),
       createdAt: updatedTask.createdAt.toISOString(),
       updatedAt: updatedTask.updatedAt.toISOString()
     };
@@ -182,7 +297,7 @@ export async function DELETE(
     }
 
     // Update project progress after deletion
-    await updateProjectProgress(projectId);
+    await updateProjectTaskStats(projectId);
 
     return NextResponse.json({ 
       status: 'success', 

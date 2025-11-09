@@ -7,6 +7,7 @@ import { FaRegEye } from "react-icons/fa";
 import { useRouter } from 'next/navigation';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { formatDateTime } from '@/utils/dateFormatter';
+import { FaCheck, FaCircle } from 'react-icons/fa';
 
 interface ProjectCardProps {
   project: BaseProject;
@@ -155,8 +156,19 @@ export default function ProjectCard({ project, onDelete, taskCount = 0 }: Projec
               <div className="flex items-center gap-2">
                 <FaRegEye className="text-base" />
                 <span>
-  View Tasks <span className="font-medium">({taskCount})</span>
-                </span>
+  View Tasks ({project.taskStats?.total ?? 0})
+</span>
+
+<div className="flex items-center gap-4 text-xs text-gray-500 mt-2">
+  <span className="flex items-center gap-1">
+    <FaCheck className="text-green-500" />
+    {project.taskStats?.completed ?? 0} done
+  </span>
+  <span className="flex items-center gap-1">
+    <FaCircle className="text-blue-500" />
+    {project.taskStats?.incomplete ?? 0} pending
+  </span>
+</div>
               </div>
             </button>
             

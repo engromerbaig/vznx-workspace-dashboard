@@ -5,6 +5,9 @@ export interface BaseTask {
   name: string;
   status: 'incomplete' | 'complete';
   assignedTo: string;
+  createdBy: string; // username
+  lastModifiedBy?: string; // username
+  completedAt?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -13,10 +16,12 @@ export interface CreateTaskData {
   projectId: string;
   name: string;
   assignedTo: string;
+  createdBy?: string;
 }
 
 export interface UpdateTaskData {
   name?: string;
   status?: 'incomplete' | 'complete';
   assignedTo?: string;
+  lastModifiedBy?: string;
 }

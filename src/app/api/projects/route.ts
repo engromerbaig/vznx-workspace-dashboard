@@ -9,7 +9,6 @@ export async function GET() {
   try {
     const db = await getDatabase();
     
-    // Use aggregation to join with users collection
     const projects = await db.collection('projects').aggregate([
       {
         $lookup: {
@@ -22,7 +21,40 @@ export async function GET() {
       {
         $unwind: {
           path: '$creator',
-          preserveNullAndEmptyArrays: true // In case user doesn't exist
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup: {
+          from: 'tasks',
+          localField: '_id',
+          foreignField: 'projectId',
+          as: 'projectTasks'
+        }
+      },
+      {
+        $addFields: {
+          taskStats: {
+            total: { $size: '$projectTasks' },
+            completed: {
+              $size: {
+                $filter: {
+                  input: '$projectTasks',
+                  as: 'task',
+                  cond: { $eq: ['$$task.status', 'complete'] }
+                }
+              }
+            },
+            incomplete: {
+              $size: {
+                $filter: {
+                  input: '$projectTasks',
+                  as: 'task',
+                  cond: { $eq: ['$$task.status', 'incomplete'] }
+                }
+              }
+            }
+          }
         }
       },
       {
@@ -33,6 +65,7 @@ export async function GET() {
           description: 1,
           createdAt: 1,
           updatedAt: 1,
+          taskStats: 1,
           createdBy: {
             $cond: {
               if: { $ne: ['$creator', null] },
@@ -53,7 +86,8 @@ export async function GET() {
       status: project.status,
       progress: project.progress,
       description: project.description,
-      createdBy: project.createdBy, // This now contains the actual username
+      createdBy: project.createdBy,
+      taskStats: project.taskStats,
       createdAt: project.createdAt.toISOString(),
       updatedAt: project.updatedAt.toISOString()
     }));

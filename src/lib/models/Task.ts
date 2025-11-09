@@ -22,13 +22,27 @@ const taskSchema = new Schema({
     type: String, 
     required: true,
     trim: true 
+  },
+  // Track who created and last modified the task
+  createdBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  lastModifiedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  },
+  // Additional tracking
+  completedAt: {
+    type: Date
   }
 }, { 
   timestamps: true 
 });
 
 export type TaskDocument = InferSchemaType<typeof taskSchema> & {
-  _id: string;
+  _id: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 };
