@@ -52,19 +52,7 @@ export default function Navbar() {
         </div>
 
         <nav className="flex flex-col gap-1 flex-1">
-          {/* Control Panel visible only to SUPERADMIN */}
-          {hasRole(user?.role, ROLES.SUPERADMIN) && (
-            <a
-              href="/superadmin"
-              className={`flex items-center gap-3 px-4 py-2 rounded-md text-gray-700 hover:bg-primary/10 hover:text-primary transition-colors ${
-                pathname === '/superadmin' ? 'bg-primary/20 text-primary font-semibold' : ''
-              } ${isLoggingOut ? 'pointer-events-none opacity-50' : ''}`} // Use global state
-              onClick={() => setIsCanvasOpen(false)}
-            >
-              <FaCog className="text-xl" />
-              <span>Control Panel</span>
-            </a>
-          )}
+     
 
           {/* Regular Nav Items */}
           {navItems.map((item) => {
@@ -116,10 +104,7 @@ export default function Navbar() {
             </a>
           )}
 
-          {/* Notifications only for SUPERADMIN */}
-          {hasRole(user?.role, ROLES.SUPERADMIN) && (
-            <NotificationDropdown userRole={user?.role} notifications={[]} setNotifications={() => {}} />
-          )}
+      
         </nav>
       </div>
 
