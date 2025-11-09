@@ -39,15 +39,16 @@ async function updateProjectTaskStats(projectId: string) {
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params; // Await params first
     const db = await getDatabase();
     
     // Use aggregation to get task with populated user info
     const task = await db.collection('tasks').aggregate([
       {
-        $match: { _id: new ObjectId(params.id) }
+        $match: { _id: new ObjectId(id) }
       },
       {
         $lookup: {
@@ -127,9 +128,10 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params; // Await params first
     const currentUser = await getCurrentUser();
     
     if (!currentUser) {
@@ -143,7 +145,7 @@ export async function PUT(
     const db = await getDatabase();
     
     const currentTask = await db.collection('tasks').findOne({
-      _id: new ObjectId(params.id)
+      _id: new ObjectId(id)
     });
 
     if (!currentTask) {
@@ -169,7 +171,7 @@ export async function PUT(
     }
 
     const result = await db.collection('tasks').updateOne(
-      { _id: new ObjectId(params.id) },
+      { _id: new ObjectId(id) },
       { $set: updateData }
     );
 
@@ -186,7 +188,7 @@ export async function PUT(
     // Return updated task with populated user info
     const updatedTask = await db.collection('tasks').aggregate([
       {
-        $match: { _id: new ObjectId(params.id) }
+        $match: { _id: new ObjectId(id) }
       },
       {
         $lookup: {
@@ -266,14 +268,15 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params; // Await params first
     const db = await getDatabase();
     
     // Get task first to know projectId for progress update
     const task = await db.collection('tasks').findOne({
-      _id: new ObjectId(params.id)
+      _id: new ObjectId(id)
     });
 
     if (!task) {
@@ -286,7 +289,7 @@ export async function DELETE(
     const projectId = task.projectId;
 
     const result = await db.collection('tasks').deleteOne({
-      _id: new ObjectId(params.id)
+      _id: new ObjectId(id)
     });
 
     if (result.deletedCount === 0) {

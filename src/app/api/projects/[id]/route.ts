@@ -40,14 +40,15 @@ async function updateProjectTaskStats(projectId: string) {
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params; // Await params first
     const db = await getDatabase();
     
     const project = await db.collection('projects').aggregate([
       {
-        $match: { _id: new ObjectId(params.id) }
+        $match: { _id: new ObjectId(id) }
       },
       {
         $lookup: {
@@ -61,6 +62,39 @@ export async function GET(
         $unwind: {
           path: '$creator',
           preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup: {
+          from: 'tasks',
+          localField: '_id',
+          foreignField: 'projectId',
+          as: 'projectTasks'
+        }
+      },
+      {
+        $addFields: {
+          taskStats: {
+            total: { $size: '$projectTasks' },
+            completed: {
+              $size: {
+                $filter: {
+                  input: '$projectTasks',
+                  as: 'task',
+                  cond: { $eq: ['$$task.status', 'complete'] }
+                }
+              }
+            },
+            incomplete: {
+              $size: {
+                $filter: {
+                  input: '$projectTasks',
+                  as: 'task',
+                  cond: { $eq: ['$$task.status', 'incomplete'] }
+                }
+              }
+            }
+          }
         }
       },
       {
@@ -91,7 +125,7 @@ export async function GET(
     }
 
     // Get real-time stats to ensure consistency
-    const realTimeStats = await TaskStatsService.getProjectStats(params.id);
+    const realTimeStats = await TaskStatsService.getProjectStats(id);
     
     const formattedProject: BaseProject = {
       _id: project._id.toString(),
@@ -120,9 +154,10 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params; // Await params first
     const currentUser = await getCurrentUser();
     
     if (!currentUser) {
@@ -137,7 +172,7 @@ export async function PUT(
     
     // First, verify the project exists
     const project = await db.collection('projects').findOne({
-      _id: new ObjectId(params.id)
+      _id: new ObjectId(id)
     });
 
     if (!project) {
@@ -153,7 +188,7 @@ export async function PUT(
     };
 
     const result = await db.collection('projects').updateOne(
-      { _id: new ObjectId(params.id) },
+      { _id: new ObjectId(id) },
       { $set: updateData }
     );
 
@@ -167,7 +202,7 @@ export async function PUT(
     // Return updated project with populated info
     const updatedProject = await db.collection('projects').aggregate([
       {
-        $match: { _id: new ObjectId(params.id) }
+        $match: { _id: new ObjectId(id) }
       },
       {
         $lookup: {
@@ -270,13 +305,14 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params; // Await params first
     const db = await getDatabase();
     
     const result = await db.collection('projects').deleteOne({
-      _id: new ObjectId(params.id)
+      _id: new ObjectId(id)
     });
 
     if (result.deletedCount === 0) {
@@ -288,7 +324,7 @@ export async function DELETE(
 
     // Also delete all tasks associated with this project
     await db.collection('tasks').deleteMany({
-      projectId: params.id
+      projectId: id
     });
 
     return NextResponse.json({ 

@@ -5,17 +5,50 @@ import { getDatabase } from '@/lib/mongodb';
 import { BaseTask } from '@/types/task';
 import { getCurrentUser } from '@/lib/server/auth-utils';
 
+// Helper function to update project task statistics
+async function updateProjectTaskStats(projectId: string) {
+  const db = await getDatabase();
+  
+  const tasks = await db.collection('tasks')
+    .find({ projectId })
+    .toArray();
+
+  const totalTasks = tasks.length;
+  const completedTasks = tasks.filter(task => task.status === 'complete').length;
+  const incompleteTasks = totalTasks - completedTasks;
+  
+  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  
+  // Update project progress and task stats
+  await db.collection('projects').updateOne(
+    { _id: new ObjectId(projectId) },
+    { 
+      $set: { 
+        progress,
+        status: progress === 100 ? 'completed' : progress > 0 ? 'in-progress' : 'planning',
+        taskStats: {
+          total: totalTasks,
+          completed: completedTasks,
+          incomplete: incompleteTasks
+        },
+        updatedAt: new Date()
+      }
+    }
+  );
+}
+
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // params is now a Promise
 ) {
   try {
+    const { id } = await params; // Await the params first
     const db = await getDatabase();
     
     // Use aggregation to get tasks with populated user info
     const tasks = await db.collection('tasks').aggregate([
       {
-        $match: { projectId: params.id }
+        $match: { projectId: id } // Use the awaited id
       },
       {
         $lookup: {
@@ -91,9 +124,10 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> } // params is now a Promise
 ) {
   try {
+    const { id } = await params; // Await the params first
     const currentUser = await getCurrentUser();
     
     if (!currentUser) {
@@ -124,7 +158,7 @@ export async function POST(
 
     const db = await getDatabase();
     const project = await db.collection('projects').findOne({
-      _id: new ObjectId(params.id)
+      _id: new ObjectId(id) // Use the awaited id
     });
 
     if (!project) {
@@ -137,7 +171,7 @@ export async function POST(
     const now = new Date();
     
     const task = {
-      projectId: params.id,
+      projectId: id, // Use the awaited id
       name: name.trim(),
       assignedTo: assignedTo.trim(),
       status: 'incomplete' as const,
@@ -150,7 +184,7 @@ export async function POST(
     const result = await db.collection('tasks').insertOne(task);
     
     // Update project task stats
-    await updateProjectTaskStats(params.id);
+    await updateProjectTaskStats(id); // Use the awaited id
 
     // Get the created task with populated user info
     const newTask = await db.collection('tasks').aggregate([
@@ -215,36 +249,4 @@ export async function POST(
       { status: 500 }
     );
   }
-}
-
-// Helper function to update project task statistics
-async function updateProjectTaskStats(projectId: string) {
-  const db = await getDatabase();
-  
-  const tasks = await db.collection('tasks')
-    .find({ projectId })
-    .toArray();
-
-  const totalTasks = tasks.length;
-  const completedTasks = tasks.filter(task => task.status === 'complete').length;
-  const incompleteTasks = totalTasks - completedTasks;
-  
-  const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
-  
-  // Update project progress and task stats
-  await db.collection('projects').updateOne(
-    { _id: new ObjectId(projectId) },
-    { 
-      $set: { 
-        progress,
-        status: progress === 100 ? 'completed' : progress > 0 ? 'in-progress' : 'planning',
-        taskStats: {
-          total: totalTasks,
-          completed: completedTasks,
-          incomplete: incompleteTasks
-        },
-        updatedAt: new Date()
-      }
-    }
-  );
 }
