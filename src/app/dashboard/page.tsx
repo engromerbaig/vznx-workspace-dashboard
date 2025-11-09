@@ -85,7 +85,7 @@ export default function DashboardPage() {
 
         {/* Welcome Message with User Info */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-xl font-bold mb-2">Welcome back, {user?.username}!</h2>
+          <h2 className="text-xl font-bold mb-2 text-black">Welcome back, {user?.username}!</h2>
           <div className="flex items-center gap-4 text-sm text-gray-600">
             <span>Role: <strong className="capitalize">{user?.role}</strong></span>
             <span>•</span>
