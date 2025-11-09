@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useRouter, usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { CiLogout } from 'react-icons/ci';
-import { FaBars, FaTimes } from 'react-icons/fa';
+import { FaBars, FaTimes, FaUser } from 'react-icons/fa';
 
 import { useUser } from '@/context/UserContext';
 import { useLogout } from '@/context/LogoutContext';
@@ -24,19 +24,19 @@ export default function Navbar() {
     <>
       <button
         onClick={() => setIsCanvasOpen(!isCanvasOpen)}
-        className="md:hidden fixed top-4 right-4 z-50 bg-primary text-white p-2 rounded-md hover:bg-primary/80 transition-all"
+        className="md:hidden fixed top-4 right-4 z-50 shadow-2xl bg-primary text-white p-2 rounded-md hover:bg-primary/80 transition-all"
         disabled={isLoggingOut}
       >
         {isCanvasOpen ? <FaTimes size={20} /> : <FaBars size={20} />}
       </button>
 
       <div
-        className={`fixed top-0 left-0 h-full s shadow-xl z-40 w-64 p-6 flex flex-col gap-6 md:translate-x-0 transform transition-transform duration-300 ${
+        className={`fixed top-0 left-0 h-full shadow-xl z-40 w-64 p-6 flex flex-col gap-6 md:translate-x-0 transform transition-transform duration-300 ${
           isCanvasOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isLoggingOut ? 'pointer-events-none opacity-50' : ''}`}
       >
-        {/* Horizontally Centered Logo */}
-        <div className="flex justify-center mb-4">
+        {/* Logo with border below */}
+        <div className="flex justify-center mb-4 pb-4 border-b border-secondary">
           <a href="/dashboard">
             <Image src="/logo2.png" alt="VZNX Logo" width={140} height={30} />
           </a>
@@ -50,7 +50,7 @@ export default function Navbar() {
               <a
                 key={item.name}
                 href={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-md text-white hover:bg-primary/30  transition-colors ${
+                className={`flex items-center gap-3 px-4 py-3 rounded-md text-white hover:bg-primary/30 transition-colors ${
                   pathname === item.path ? 'bg-primary/90 text-primary font-semibold' : ''
                 } ${isLoggingOut ? 'pointer-events-none opacity-50' : ''}`}
                 onClick={() => setIsCanvasOpen(false)}
@@ -66,28 +66,35 @@ export default function Navbar() {
           {/* User Info Section */}
           {user && (
             <div className="px-4 py-3 border-t border-secondary mt-auto">
-              <div className="text-sm text-white mb-2">
-                <div className="font-medium text-white">@{user.username}</div>
+              <div className="flex items-center gap-3 text-white mb-3">
+                <div className="w-8 h-8 bg-primary/30 rounded-full flex items-center justify-center">
+                  <FaUser className="text-sm" />
+                </div>
+                <div className="text-sm">
+                  <div className="font-medium">@{user.username}</div>
+                </div>
               </div>
               
-              {/* Logout Button - Styled consistently */}
-              <PrimaryButton
+              {/* Simplified Logout Button */}
+              <button
                 onClick={handleGlobalLogout}
                 disabled={isLoggingOut}
-                isLoading={isLoggingOut}
-                loadingText="Logging out..."
-                className="w-full justify-start px-2 py-1 rounded-full transition-colors hover:bg-red-50 border border-red-200 shadow-sm"
-                showIcon={!isLoggingOut}
-                icon={CiLogout}
-                rounded='rounded-full'
-                iconPosition="left"
-                textColor="text-red-700"
-                bgColor="bg-red-200"
-                hoverColor="hover:bg-red-100"
-                
+                className={`flex items-center cursor-pointer gap-2 w-full px-3 py-2 text-white hover:bg-primary/30 rounded-md transition-colors ${
+                  isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
               >
-                Logout
-              </PrimaryButton>
+                {isLoggingOut ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <span>Logging out...</span>
+                  </>
+                ) : (
+                  <>
+                    <CiLogout className="text-lg" />
+                    <span>Logout</span>
+                  </>
+                )}
+              </button>
             </div>
           )}
         </nav>
