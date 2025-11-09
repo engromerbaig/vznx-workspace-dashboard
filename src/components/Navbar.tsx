@@ -5,16 +5,11 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useState } from 'react';
 import { CiLogout } from 'react-icons/ci';
 import { FaBars, FaTimes, FaUser, FaCog } from 'react-icons/fa';
-import { CiSettings } from "react-icons/ci";
 
 import { useUser } from '@/context/UserContext';
 import { useLogout } from '@/context/LogoutContext';
-import NotificationDropdown from './NotificationDropdown';
-import Link from 'next/link';
 import PrimaryButton from '@/components/PrimaryButton';
 import { navItems } from '@/data/navItems';
-import AuthLoader from '@/components/ui/AuthLoader';
-import Loader from './Loader';
 
 export default function Navbar() {
   const router = useRouter();
@@ -42,7 +37,7 @@ export default function Navbar() {
       >
         <div className="mb-2">
           <a href="/dashboard">
-            <Image src="/logo.png" alt="Econs Logo" width={140} height={30} />
+            <Image src="/logo2.png" alt="Econs Logo" width={140} height={30} />
           </a>
         </div>
 

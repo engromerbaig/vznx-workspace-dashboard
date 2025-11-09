@@ -4,9 +4,7 @@ import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { getDatabase } from '@/lib/mongodb';
 import { AUTH_CONFIG, getInactivityTimeoutMs } from '@/lib/auth-config';
-import { pusherServer } from '@/lib/pusher-server';
 import { getCurrentUser } from '@/lib/server/auth-utils';
-import { ActivityLogger } from '@/lib/server/activity-logger';
 
 function generateSessionToken(): string {
   return crypto.randomUUID();
@@ -46,14 +44,6 @@ export async function POST(request: Request) {
 
     // If user already has an active session (from database), handle takeover
     const userHasActiveSession = user.sessionToken && user.sessionExpiresAt > now;
-    
-    if (userHasActiveSession) {
-      // Log the session takeover
-      await ActivityLogger.logSessionTakeover(user, {
-        previousSessionToken: user.sessionToken,
-        previousSessionCreatedAt: user.sessionCreatedAt
-      }, request);
-    }
 
     // Create new session token
     const newSessionToken = generateSessionToken();
@@ -76,47 +66,6 @@ export async function POST(request: Request) {
     if (result.modifiedCount === 0) {
       return NextResponse.json({ status: 'error', message: 'Failed to create session' }, { status: 500 });
     }
-
-    // Real-time updates for session takeover
-    try {
-      const counts = {
-        totalUsers: await users.countDocuments(),
-        totalOnline: await users.countDocuments({ sessionExpiresAt: { $gt: new Date() } })
-      };
-
-      await pusherServer.trigger('user-counts', 'counts-updated', counts);
-      
-      // Notify about login with takeover info
-      await pusherServer.trigger('user-updates', 'user-logged-in', {
-        userId: user._id.toString(),
-        user: { 
-          _id: user._id.toString(), 
-          name: user.name, 
-          username: user.username, 
-          email: user.email, 
-          role: user.role 
-        },
-        timestamp: now.toISOString(),
-        action: 'LOGIN',
-        sessionTakeover: userHasActiveSession,
-        previousSessionInvalidated: userHasActiveSession
-      });
-
-      // If there was a previous session, trigger logout for that session
-      if (userHasActiveSession) {
-        await pusherServer.trigger(`user-${user._id.toString()}`, 'session-takeover', {
-          message: 'Your session has been taken over by a new login',
-          timestamp: now.toISOString(),
-          newLoginLocation: request.headers.get('x-forwarded-for') || 'unknown'
-        });
-      }
-
-    } catch (pusherError) {
-      console.error('Pusher error:', pusherError);
-    }
-
-    // Log activity
-    await ActivityLogger.logLogin(user, rememberMe, userHasActiveSession, request);
 
     // Set cookies with new session token
     const cookieStore = await cookies();
@@ -157,7 +106,6 @@ export async function POST(request: Request) {
 
   } catch (error) {
     console.error('Login error:', error);
-    await ActivityLogger.logError('LOGIN', error as Error, request);
     return NextResponse.json({ status: 'error', message: 'Internal server error' }, { status: 500 });
   }
 }
