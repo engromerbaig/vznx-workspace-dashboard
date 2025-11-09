@@ -50,8 +50,8 @@ export default function Navbar() {
               <a
                 key={item.name}
                 href={item.path}
-                className={`flex items-center gap-3 px-4 py-3 rounded-md text-white hover:bg-primary/10 hover:text-primary transition-colors ${
-                  pathname === item.path ? 'bg-primary/20 text-primary font-semibold' : ''
+                className={`flex items-center gap-3 px-4 py-3 rounded-md text-white hover:bg-primary/30  transition-colors ${
+                  pathname === item.path ? 'bg-primary/90 text-primary font-semibold' : ''
                 } ${isLoggingOut ? 'pointer-events-none opacity-50' : ''}`}
                 onClick={() => setIsCanvasOpen(false)}
               >
