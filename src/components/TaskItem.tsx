@@ -10,12 +10,13 @@ import { toast } from '@/components/ToastProvider';
 
 interface TaskItemProps {
   task: BaseTask;
-  onTaskUpdate?: () => void; // Optional callback for parent component
+  onTaskUpdate?: () => void;
 }
 
 export default function TaskItem({ task, onTaskUpdate }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false); // New state for delete animation
 
   const toggleStatus = async () => {
     if (isUpdating) return;
@@ -26,8 +27,8 @@ export default function TaskItem({ task, onTaskUpdate }: TaskItemProps) {
       const result = await updateTaskStatus(task._id, newStatus);
 
       if (result.success) {
-        toast.success(`Task marked as ${newStatus}`); // Toast for status update
-        onTaskUpdate?.(); // Trigger parent refresh if needed
+        toast.success(`Task marked as ${newStatus}`);
+        onTaskUpdate?.();
       }
     } catch (error) {
       console.error('Failed to update task:', error);
@@ -37,34 +38,37 @@ export default function TaskItem({ task, onTaskUpdate }: TaskItemProps) {
     }
   };
 
-const handleDelete = async () => {
-  toast.customConfirm(
+  const handleDelete = async () => {
+   toast.customConfirm(
     `Are you sure you want to delete ${task.name}?`,
-    async () => {
-      try {
-        const result = await deleteTask(task._id);
-        if (result.success) {
-          toast.success('Task deleted successfully');
-          onTaskUpdate?.();
+      async () => {
+        try {
+          setIsDeleting(true); // Trigger fade-out animation
+          await new Promise((r) => setTimeout(r, 300)); // Wait for animation
+          const result = await deleteTask(task._id);
+          if (result.success) {
+            toast.success('Task deleted successfully');
+            onTaskUpdate?.();
+          }
+        } catch (error) {
+          console.error('Failed to delete task:', error);
+          toast.error('Failed to delete task');
         }
-      } catch (error) {
-        console.error('Failed to delete task:', error);
-        toast.error('Failed to delete task');
       }
-    }
-  );
-};
-
-
+    );
+  };
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
   };
 
   return (
-    <div className={`bg-white rounded-lg shadow-sm border transition-all duration-300 ${
-      task.status === 'complete' ? 'border-green-200 bg-green-50' : 'border-gray-200 hover:border-blue-300'
-    } ${isUpdating ? 'opacity-50' : ''}`}>
+    <div
+      className={`bg-white rounded-lg shadow-sm border transition-all duration-300 
+        ${task.status === 'complete' ? 'border-green-200 bg-green-50' : 'border-gray-200 hover:border-blue-300'} 
+        ${isUpdating ? 'opacity-50' : ''} 
+        ${isDeleting ? 'animate-fadeOut' : 'animate-fadeInUp'}`} // Apply global animations
+    >
       <div className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3 flex-1">
@@ -101,14 +105,14 @@ const handleDelete = async () => {
           <div className="flex items-center gap-1">
             <button
               onClick={toggleExpand}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors animate-popIn"
               title="View details"
             >
               <FaEdit className="text-sm" />
             </button>
             <button
               onClick={handleDelete}
-              className="p-2 text-red-400 cursor-pointer hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+              className="p-2 text-red-400 cursor-pointer hover:text-red-600 hover:bg-red-50 rounded transition-colors animate-popIn"
               title="Delete task"
             >
               <FaTrash className="text-sm" />
@@ -118,7 +122,7 @@ const handleDelete = async () => {
 
         {/* Expanded Details */}
         {isExpanded && (
-          <div className="mt-4 pt-4 border-t border-gray-200 animate-fadeIn">
+          <div className="mt-4 pt-4 border-t border-gray-200 animate-fadeInUp">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
               {/* Created Info */}
               <div className="space-y-2">
