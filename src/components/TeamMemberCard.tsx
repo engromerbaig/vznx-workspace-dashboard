@@ -2,7 +2,7 @@
 
 import { FaTrash, FaUser, FaEnvelope, FaBriefcase, FaTasks, FaExclamationTriangle, FaCheckCircle, FaArrowRight } from 'react-icons/fa';
 import { TeamMemberWithWorkload } from '@/types/team';
-import { getCapacityInfo } from '@/utils/capacity';
+import { getCapacityInfo, calculateCapacity, CAPACITY_THRESHOLDS } from '@/utils/capacity';
 import { formatDateTime } from '@/utils/dateFormatter';
 import { useState } from 'react';
 import { toast } from '@/components/ToastProvider';
@@ -22,14 +22,14 @@ export default function TeamMemberCard({
   const capacityInfo = getCapacityInfo(member.capacity);
 
   const getCapacityGradient = (capacity: number) => {
-    if (capacity < 60) return 'from-green-400 to-emerald-500';
-    if (capacity < 80) return 'from-yellow-400 to-amber-500';
+    if (capacity < CAPACITY_THRESHOLDS.COMFORTABLE) return 'from-green-400 to-emerald-500';
+    if (capacity < CAPACITY_THRESHOLDS.MODERATE) return 'from-yellow-400 to-amber-500';
     return 'from-red-400 to-rose-500';
   };
 
   const getCapacityIcon = (capacity: number) => {
-    if (capacity < 60) return <FaCheckCircle className="text-green-500" />;
-    if (capacity < 80) return <FaBriefcase className="text-yellow-500" />;
+    if (capacity < CAPACITY_THRESHOLDS.COMFORTABLE) return <FaCheckCircle className="text-green-500" />;
+    if (capacity < CAPACITY_THRESHOLDS.MODERATE) return <FaBriefcase className="text-yellow-500" />;
     return <FaExclamationTriangle className="text-red-500" />;
   };
 
@@ -160,7 +160,7 @@ export default function TeamMemberCard({
             </div>
             <div className="text-center animate-popIn" style={{ animationDelay: '0.2s' }}>
               <div className="text-2xl font-bold text-purple-600 flex items-center justify-center">
-                {8 - member.taskCount}
+                {Math.max(0, 8 - member.taskCount)}
               </div>
               <div className="text-xs text-purple-700 font-medium">Available</div>
             </div>
