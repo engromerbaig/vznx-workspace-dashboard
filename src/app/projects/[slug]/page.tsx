@@ -11,7 +11,7 @@ import PrimaryButton from '@/components/PrimaryButton';
 import { FaPlus, FaArrowLeft, FaCheck, FaCircle } from 'react-icons/fa';
 import { FaSync } from 'react-icons/fa';
 import { createTask } from '@/lib/actions/taskActions';
-import { formatDateTime } from '@/utils/dateFormatter';
+import { formatDateTime, formatTime } from '@/utils/dateFormatter';
 import { getStatusColors } from '@/utils/projectStatus';
 
 export default function ProjectDetailsPage() {
@@ -209,7 +209,7 @@ export default function ProjectDetailsPage() {
 
   const getProgressColor = (progress: number) => {
     if (progress === 100) return 'bg-green-500';
-    if (progress >= 50) return 'bg-blue-500';
+    if (progress >= 50) return 'bg-primary/80';
     return 'bg-yellow-500';
   };
 
@@ -230,7 +230,7 @@ export default function ProjectDetailsPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <button
               onClick={() => router.push('/dashboard')}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-800 transition-colors font-medium self-start"
+              className="flex items-center gap-2 text-primary hover:text-blue-800 transition-colors font-medium self-start"
             >
               <FaArrowLeft className="text-sm" />
               Back to Projects
@@ -238,7 +238,7 @@ export default function ProjectDetailsPage() {
             
             <div className="flex items-center gap-4">
               <div className="text-xs text-gray-500 hidden sm:block">
-                Last updated: {formatLastUpdated(lastUpdated)}
+                Last updated: {formatTime(lastUpdated)}
               </div>
               <button
                 onClick={handleRefresh}
@@ -292,8 +292,8 @@ export default function ProjectDetailsPage() {
                 <div className="text-xs sm:text-sm text-green-700 font-medium">Completed</div>
               </div>
               <div className="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-200">
-                <div className="text-xl sm:text-2xl font-bold text-blue-600">{pendingTasks}</div>
-                <div className="text-xs sm:text-sm text-blue-700 font-medium">Pending</div>
+                <div className="text-xl sm:text-2xl font-bold text-primary">{pendingTasks}</div>
+                <div className="text-xs sm:text-sm text-primary/90 font-medium">Pending</div>
               </div>
               <div className="bg-orange-50 rounded-lg p-3 sm:p-4 border border-orange-200">
                 <div className="text-xl sm:text-2xl font-bold text-orange-600">{progress}%</div>
@@ -406,7 +406,7 @@ export default function ProjectDetailsPage() {
                     {completedTasks} completed
                   </span>
                   <span className="flex items-center gap-1">
-                    <FaCircle className="text-blue-500 text-xs" />
+                    <FaCircle className="text-primary/80 text-xs" />
                     {pendingTasks} pending
                   </span>
                 </div>
