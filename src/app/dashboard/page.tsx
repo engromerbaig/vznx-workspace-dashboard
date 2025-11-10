@@ -83,18 +83,19 @@ export default function DashboardPage() {
           <p className="text-gray-600 mt-2">Projects Dashboard</p>
         </div>
 
-        {/* Welcome Message with User Info */}
+        {/* Welcome Message */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
           <h2 className="text-xl font-bold mb-2 text-black">Welcome back, {user?.username}!</h2>
           <div className="flex items-center gap-4 text-sm text-gray-600">
-      
             <span>Email: {user?.email}</span>
           </div>
         </div>
 
-        {/* Projects Header with Add Button */}
+        {/* Projects Header with count */}
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Projects</h2>
+          <h2 className="text-2xl font-bold text-gray-800">
+            Projects ({projects.length})
+          </h2>
           <PrimaryButton
             onClick={() => setShowAddModal(true)}
             showIcon={true}
@@ -117,15 +118,22 @@ export default function DashboardPage() {
             ))}
           </div>
         ) : projects.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-500 text-lg mb-4">No projects yet</div>
-            <PrimaryButton
-              onClick={() => setShowAddModal(true)}
-              showIcon={true}
-              icon={FaPlus}
-            >
-              Create Your First Project
-            </PrimaryButton>
+          // ✅ Centered No Projects UI
+          <div className="text-center py-12 sm:py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+            <div className="text-gray-400 text-5xl sm:text-6xl mb-3 sm:mb-4">📂</div>
+            <div className="text-gray-500 text-lg mb-3 sm:mb-4">No projects yet</div>
+            <p className="text-gray-400 text-sm mb-4 sm:mb-6 max-w-md mx-auto px-4">
+              Get started by creating your first project. Projects help you organize your tasks and track progress efficiently.
+            </p>
+            <div className="flex justify-center">
+              <PrimaryButton
+                onClick={() => setShowAddModal(true)}
+                showIcon={true}
+                icon={FaPlus}
+              >
+                Create Your First Project
+              </PrimaryButton>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
