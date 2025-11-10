@@ -10,6 +10,7 @@ export interface BaseTask {
   completedAt?: string;
   createdAt: string;
   updatedAt: string;
+    projectName?: string; // Add this optional field
 }
 
 export interface CreateTaskData {

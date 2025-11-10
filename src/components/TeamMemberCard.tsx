@@ -6,6 +6,7 @@ import { getCapacityInfo, calculateCapacity, CAPACITY_THRESHOLDS } from '@/utils
 import { formatDateTime } from '@/utils/dateFormatter';
 import { useState } from 'react';
 import { toast } from '@/components/ToastProvider';
+import { useRouter } from 'next/navigation'; // Add this import
 
 interface TeamMemberCardProps {
   member: TeamMemberWithWorkload;
@@ -16,6 +17,7 @@ export default function TeamMemberCard({
   member, 
   onDelete 
 }: TeamMemberCardProps) {
+  const router = useRouter(); // Add router
   const [isDeleting, setIsDeleting] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   
@@ -31,6 +33,16 @@ export default function TeamMemberCard({
     if (capacity < CAPACITY_THRESHOLDS.COMFORTABLE) return <FaCheckCircle className="text-green-500" />;
     if (capacity < CAPACITY_THRESHOLDS.MODERATE) return <FaBriefcase className="text-yellow-500" />;
     return <FaExclamationTriangle className="text-red-500" />;
+  };
+
+  // Handle card click to navigate to team member details
+  const handleCardClick = (e: React.MouseEvent) => {
+    // Prevent navigation if clicking on delete button or its children
+    if ((e.target as HTMLElement).closest('button') || isDeleting) {
+      return;
+    }
+    // Navigate to team member details page using ID (you can use slug if you implement it)
+    router.push(`/team/${member._id}`);
   };
 
   // Handle delete with proper animation and confirmation
@@ -67,6 +79,7 @@ export default function TeamMemberCard({
         }
         ${isHovered && !isDeleting ? 'ring-2 ring-blue-200 ring-opacity-50' : ''}
       `}
+      onClick={handleCardClick} // Add click handler
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

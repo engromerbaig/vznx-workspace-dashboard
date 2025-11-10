@@ -16,6 +16,8 @@ export interface BaseProject {
   taskStats?: TaskStats;
   createdAt: string;
   updatedAt: string;
+    projectName?: string; // Add this optional field
+
 }
 
 export interface CreateProjectData {

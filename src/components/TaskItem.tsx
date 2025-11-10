@@ -1,7 +1,7 @@
 'use client';
 
 import { BaseTask } from '@/types/task';
-import { FaTrash, FaCheck, FaCircle, FaUser, FaClock, FaEdit } from 'react-icons/fa';
+import { FaTrash, FaCheck, FaCircle, FaUser, FaClock, FaEdit, FaProjectDiagram } from 'react-icons/fa';
 import { FaCalendar } from 'react-icons/fa';
 import { formatDateTime } from '@/utils/dateFormatter';
 import { useState } from 'react';
@@ -11,12 +11,13 @@ import { toast } from '@/components/ToastProvider';
 interface TaskItemProps {
   task: BaseTask;
   onTaskUpdate?: () => void;
+  showProject?: boolean;
 }
 
-export default function TaskItem({ task, onTaskUpdate }: TaskItemProps) {
+export default function TaskItem({ task, onTaskUpdate, showProject = false }: TaskItemProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false); // New state for delete animation
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const toggleStatus = async () => {
     if (isUpdating) return;
@@ -43,8 +44,8 @@ export default function TaskItem({ task, onTaskUpdate }: TaskItemProps) {
     `Are you sure you want to delete ${task.name}?`,
       async () => {
         try {
-          setIsDeleting(true); // Trigger fade-out animation
-          await new Promise((r) => setTimeout(r, 300)); // Wait for animation
+          setIsDeleting(true);
+          await new Promise((r) => setTimeout(r, 300));
           const result = await deleteTask(task._id);
           if (result.success) {
             toast.success('Task deleted successfully');
@@ -67,7 +68,7 @@ export default function TaskItem({ task, onTaskUpdate }: TaskItemProps) {
       className={`bg-white rounded-lg shadow-sm border transition-all duration-300 
         ${task.status === 'complete' ? 'border-green-200 bg-green-50' : 'border-gray-200 hover:border-blue-300'} 
         ${isUpdating ? 'opacity-50' : ''} 
-        ${isDeleting ? 'animate-fadeOut' : 'animate-fadeInUp'}`} // Apply global animations
+        ${isDeleting ? 'animate-fadeOut' : 'animate-fadeInUp'}`}
     >
       <div className="p-4">
         <div className="flex items-center justify-between">
@@ -97,6 +98,17 @@ export default function TaskItem({ task, onTaskUpdate }: TaskItemProps) {
               <div className="text-sm text-gray-500 flex items-center gap-2 mt-1">
                 <FaCircle className={`text-xs ${task.status === 'complete' ? 'text-green-500' : 'text-blue-500'}`} />
                 <span>Assigned to: <span className="font-medium">{task.assignedTo}</span></span>
+                
+                {/* Show project name if showProject prop is true - FIXED: use task.projectName */}
+                {showProject && task.projectName && (
+                  <>
+                    <span className="text-gray-300">•</span>
+                    <span className="flex items-center gap-1">
+                      <FaProjectDiagram className="text-xs text-purple-500" />
+                      <span className="font-medium text-purple-600">{task.projectName}</span>
+                    </span>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -155,6 +167,15 @@ export default function TaskItem({ task, onTaskUpdate }: TaskItemProps) {
                   </span>
                 </div>
               </div>
+
+              {/* Show project in expanded view if showProject is true - FIXED: use task.projectName */}
+              {showProject && task.projectName && (
+                <div className="col-span-2 flex items-center gap-2 p-2 bg-purple-50 rounded border border-purple-200">
+                  <FaProjectDiagram className="text-purple-500 text-xs" />
+                  <span className="font-medium text-purple-800">Project:</span>
+                  <span className="text-purple-700">{task.projectName}</span>
+                </div>
+              )}
 
               {/* Completion Info */}
               {task.completedAt && (

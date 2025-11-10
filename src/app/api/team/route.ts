@@ -1,23 +1,27 @@
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { getCurrentUser } from '@/lib/server/auth-utils';
-import { ObjectId } from 'mongodb';
 
 export async function GET() {
   try {
     const db = await getDatabase();
-    
+
     const teamMembers = await db.collection('teammembers').find({})
       .sort({ createdAt: -1 })
       .toArray();
 
-    const formattedMembers = teamMembers.map(member => ({
-      _id: member._id.toString(),
-      name: member.name,
-      email: member.email,
-      role: member.role,
-      createdAt: member.createdAt.toISOString(),
-      updatedAt: member.updatedAt.toISOString()
+    // For each member, count tasks assigned
+    const formattedMembers = await Promise.all(teamMembers.map(async (member) => {
+      const taskCount = await db.collection('tasks').countDocuments({ assignedTo: member.name });
+      return {
+        _id: member._id.toString(),
+        name: member.name,
+        email: member.email,
+        role: member.role,
+        createdAt: member.createdAt.toISOString(),
+        updatedAt: member.updatedAt.toISOString(),
+        taskCount,
+      };
     }));
 
     return NextResponse.json({ 
@@ -51,17 +55,11 @@ export async function POST(request: Request) {
     } = await request.json();
 
     if (!name || name.trim() === '') {
-      return NextResponse.json(
-        { status: 'error', message: 'Name is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ status: 'error', message: 'Name is required' }, { status: 400 });
     }
 
     if (!email || email.trim() === '') {
-      return NextResponse.json(
-        { status: 'error', message: 'Email is required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ status: 'error', message: 'Email is required' }, { status: 400 });
     }
 
     const db = await getDatabase();
@@ -73,10 +71,7 @@ export async function POST(request: Request) {
     });
 
     if (existingMember) {
-      return NextResponse.json(
-        { status: 'error', message: 'Team member with this email already exists' },
-        { status: 400 }
-      );
+      return NextResponse.json({ status: 'error', message: 'Team member with this email already exists' }, { status: 400 });
     }
 
     const member = {
@@ -89,13 +84,9 @@ export async function POST(request: Request) {
 
     const result = await db.collection('teammembers').insertOne(member);
     
-    const newMember = await db.collection('teammembers').findOne({ 
-      _id: result.insertedId 
-    });
+    const newMember = await db.collection('teammembers').findOne({ _id: result.insertedId });
 
-    if (!newMember) {
-      throw new Error('Failed to create team member');
-    }
+    if (!newMember) throw new Error('Failed to create team member');
 
     const formattedMember = {
       _id: newMember._id.toString(),
@@ -103,19 +94,14 @@ export async function POST(request: Request) {
       email: newMember.email,
       role: newMember.role,
       createdAt: newMember.createdAt.toISOString(),
-      updatedAt: newMember.updatedAt.toISOString()
+      updatedAt: newMember.updatedAt.toISOString(),
+      taskCount: 0 // New member has zero tasks
     };
 
-    return NextResponse.json({ 
-      status: 'success', 
-      teamMember: formattedMember 
-    }, { status: 201 });
+    return NextResponse.json({ status: 'success', teamMember: formattedMember }, { status: 201 });
 
   } catch (error) {
     console.error('Failed to create team member:', error);
-    return NextResponse.json(
-      { status: 'error', message: 'Failed to create team member' },
-      { status: 500 }
-    );
+    return NextResponse.json({ status: 'error', message: 'Failed to create team member' }, { status: 500 });
   }
 }
