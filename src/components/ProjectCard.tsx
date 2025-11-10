@@ -113,7 +113,7 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
       <div className="absolute inset-0 flex items-center justify-center opacity-25 group-hover:opacity-10 transition-opacity duration-500">
         <ProgressPieChart 
           progress={project.progress} 
-          size="lg"
+          size="xl"
         />
       </div>
 

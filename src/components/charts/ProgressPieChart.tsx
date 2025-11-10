@@ -6,7 +6,7 @@ import { getProgressColor } from '@/utils/projectProgress';
 
 interface ProgressPieChartProps {
   progress: number;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg'| 'xl';
   showBackground?: boolean;
   className?: string;
 }
@@ -27,7 +27,9 @@ export default function ProgressPieChart({
   const sizeConfig = {
     sm: { container: 'w-32 h-32', innerRadius: 25, outerRadius: 50 },
     md: { container: 'w-48 h-48', innerRadius: 35, outerRadius: 70 },
-    lg: { container: 'w-64 h-64', innerRadius: 45, outerRadius: 90 }
+    lg: { container: 'w-64 h-64', innerRadius: 45, outerRadius: 90 },
+        xl: { container: 'w-80 h-80', innerRadius: 55, outerRadius: 110 }
+
   };
 
   const { container, innerRadius, outerRadius } = sizeConfig[size];
