@@ -277,13 +277,17 @@ export default function DashboardPage() {
             <div className="text-center py-12 bg-white rounded-lg shadow-md">
               <div className="text-gray-500 text-lg mb-4">No projects yet</div>
               <p className="text-gray-400 mb-6">Get started by creating your first project</p>
-              <PrimaryButton
+                          <div className="flex justify-center">
+   <PrimaryButton
                 onClick={() => setShowAddModal(true)}
                 showIcon={true}
                 icon={FaPlus}
               >
                 Create Your First Project
               </PrimaryButton>
+                            </div>
+
+           
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
