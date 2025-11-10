@@ -19,3 +19,8 @@ export const generateProgressData = (progress: number): Array<{ name: string; va
     { name: 'Remaining', value: 100 - progress }
   ];
 };
+
+// New utility function for progress messages
+export const getProgressMessage = (progress: number): string => {
+  return getProgressStatusText(progress);
+};

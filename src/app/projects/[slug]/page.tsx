@@ -7,14 +7,15 @@ import { BaseProject } from '@/types/project';
 import { BaseTask } from '@/types/task';
 import TaskItem from '@/components/TaskItem';
 import AddTaskModal from '@/components/AddTaskModal';
+import ProgressCard from '@/components/ProgressCard';
 import PrimaryButton from '@/components/PrimaryButton';
-import { FaPlus, FaArrowLeft, FaCheck, FaCircle } from 'react-icons/fa';
-import { FaSync } from 'react-icons/fa';
+import { FaPlus, FaArrowLeft, FaSync, FaTasks, FaCheck, FaClock, FaChartLine, FaCircle } from 'react-icons/fa';
 import { createTask } from '@/lib/actions/taskActions';
 import { formatDateTime, formatTime } from '@/utils/dateFormatter';
-import { getStatusColors } from '@/utils/projectStatus';
+import { getStatusColors, formatStatusText } from '@/utils/projectStatus';
+import { getProgressColor, getProgressMessage } from '@/utils/projectProgress';
+import { getProjectStats } from '@/utils/projectStats';
 import { toast } from '@/components/ToastProvider';
-
 
 export default function ProjectDetailsPage() {
   const params = useParams();
@@ -35,7 +36,6 @@ export default function ProjectDetailsPage() {
       setIsRefreshing(true);
       setError(null);
       
-      // Fetch project by slug
       const projectRes = await fetch(`/api/projects/${projectSlug}?t=${Date.now()}`);
       if (!projectRes.ok) {
         if (projectRes.status === 404) {
@@ -49,7 +49,6 @@ export default function ProjectDetailsPage() {
       if (projectData.status === 'success') {
         setProject(projectData.project);
         
-        // ✅ FIXED: Use the slug-based tasks endpoint
         const tasksRes = await fetch(`/api/projects/${projectSlug}/tasks?t=${Date.now()}`);
         if (!tasksRes.ok) {
           throw new Error('Failed to fetch tasks');
@@ -88,15 +87,13 @@ export default function ProjectDetailsPage() {
       if (!project) return;
       
       const result = await createTask(project._id, taskData);
-if (result.success) {
-  toast.success('Task added successfully'); // ✅ Toast
-  setShowAddTaskModal(false);
-  await fetchProjectData();
-} else {
-  throw new Error(result.error || 'Failed to create task');
-}
-
-
+      if (result.success) {
+        toast.success('Task added successfully');
+        setShowAddTaskModal(false);
+        await fetchProjectData();
+      } else {
+        throw new Error(result.error || 'Failed to create task');
+      }
     } catch (error) {
       console.error('Failed to create task:', error);
       setError(error instanceof Error ? error.message : 'Failed to create task');
@@ -104,24 +101,34 @@ if (result.success) {
   };
 
   // Manual refresh
-const handleRefresh = async () => {
-  try {
-    setIsRefreshing(true);
-    await fetchProjectData();
-    toast.success('Project and tasks refreshed'); // ✅ Toast
-  } catch (err) {
-    toast.error('Failed to refresh project data');
-  } finally {
-    setIsRefreshing(false);
-  }
-};
+  const handleRefresh = async () => {
+    try {
+      setIsRefreshing(true);
+      await fetchProjectData();
+      toast.success('Project and tasks refreshed');
+    } catch (err) {
+      toast.error('Failed to refresh project data');
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
-
-  // Handle task updates (for TaskItem callback)
+  // Handle task updates
   const handleTaskUpdate = () => {
     fetchProjectData();
   };
 
+  // Get project stats using utility function
+  const projectStats = project ? getProjectStats(project) : {
+    totalTasks: 0,
+    completedTasks: 0,
+    pendingTasks: 0,
+    progress: 0
+  };
+
+  const statusColors = project ? getStatusColors(project.status) : getStatusColors('planning');
+
+  // Skeleton Loader (preserved from original)
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
@@ -205,35 +212,6 @@ const handleRefresh = async () => {
     );
   }
 
-  const completedTasks = project.taskStats?.completed ?? 0;
-  const totalTasks = project.taskStats?.total ?? 0;
-  const pendingTasks = project.taskStats?.incomplete ?? 0;
-  const progress = project.progress ?? 0;
-
-  const statusColors = getStatusColors(project.status);
-
-  const formatLastUpdated = (date: Date) => {
-    return date.toLocaleTimeString('en-US', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      second: '2-digit'
-    });
-  };
-
-  const getProgressColor = (progress: number) => {
-    if (progress === 100) return 'bg-green-500';
-    if (progress >= 50) return 'bg-primary/80';
-    return 'bg-yellow-500';
-  };
-
-  const getProgressMessage = (progress: number) => {
-    if (progress === 100) return '🎉 Project Completed!';
-    if (progress >= 75) return '🔥 Almost there!';
-    if (progress >= 50) return '⚡ Good progress';
-    if (progress >= 25) return '📈 Making progress';
-    return '🚀 Getting started';
-  };
-
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
       <div className="max-w-6xl mx-auto">
@@ -243,7 +221,7 @@ const handleRefresh = async () => {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <button
               onClick={() => router.push('/dashboard')}
-              className="flex items-center gap-2 cursor-pointer  text-primary hover:text-blue-800 transition-colors font-medium self-start"
+              className="flex items-center gap-2 cursor-pointer text-primary hover:text-blue-800 transition-colors font-medium self-start"
             >
               <FaArrowLeft className='text-sm' />
               Back to Projects
@@ -286,7 +264,7 @@ const handleRefresh = async () => {
               </div>
               <div className="flex flex-wrap gap-2">
                 <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusColors.background} ${statusColors.text} whitespace-nowrap`}>
-                  {project.status.replace('-', ' ').toUpperCase()}
+                  {formatStatusText(project.status).toUpperCase()}
                 </span>
                 <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800 whitespace-nowrap">
                   {project.slug}
@@ -294,41 +272,56 @@ const handleRefresh = async () => {
               </div>
             </div>
 
-            {/* Progress Overview */}
+            {/* Progress Overview using ProgressCard */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center mb-6">
-              <div className="bg-gray-50 rounded-lg p-3 sm:p-4 border border-gray-200">
-                <div className="text-xl sm:text-2xl font-bold text-gray-800">{totalTasks}</div>
-                <div className="text-xs sm:text-sm text-gray-600 font-medium">Total Tasks</div>
-              </div>
-              <div className="bg-green-50 rounded-lg p-3 sm:p-4 border border-green-200">
-                <div className="text-xl sm:text-2xl font-bold text-green-600">{completedTasks}</div>
-                <div className="text-xs sm:text-sm text-green-700 font-medium">Completed</div>
-              </div>
-              <div className="bg-blue-50 rounded-lg p-3 sm:p-4 border border-blue-200">
-                <div className="text-xl sm:text-2xl font-bold text-primary">{pendingTasks}</div>
-                <div className="text-xs sm:text-sm text-primary/90 font-medium">Pending</div>
-              </div>
-              <div className="bg-orange-50 rounded-lg p-3 sm:p-4 border border-orange-200">
-                <div className="text-xl sm:text-2xl font-bold text-orange-600">{progress}%</div>
-                <div className="text-xs sm:text-sm text-orange-700 font-medium">Progress</div>
-              </div>
+              <ProgressCard
+                title="Total Tasks"
+                value={projectStats.totalTasks}
+                icon={<FaTasks className="text-gray-500 text-lg" />}
+                color="gray"
+                size="md"
+              />
+              <ProgressCard
+                title="Completed"
+                value={projectStats.completedTasks}
+                icon={<FaCheck className="text-green-500 text-lg" />}
+                color="green"
+                size="md"
+              />
+              <ProgressCard
+                title="Pending"
+                value={projectStats.pendingTasks}
+                icon={<FaClock className="text-primary text-lg" />}
+                color="blue"
+                size="md"
+              />
+              <ProgressCard
+                title="Progress"
+                value={`${projectStats.progress}%`}
+                icon={<FaChartLine className="text-orange-500 text-lg" />}
+                color="orange"
+                size="md"
+              />
             </div>
 
             {/* Progress Bar */}
-            {totalTasks > 0 && (
+            {projectStats.totalTasks > 0 && (
               <div className="mt-4 sm:mt-6">
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-sm font-medium text-gray-700">Overall Progress</span>
-                  <span className="text-sm font-bold text-gray-800">{progress}%</span>
+                  <span className="text-sm font-bold text-gray-800">{projectStats.progress}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
                   <div 
-                    className={`h-2 sm:h-3 rounded-full transition-all duration-500 ease-out ${getProgressColor(progress)}`}
-                    style={{ width: `${progress}%` }}
+                    className={`h-2 sm:h-3 rounded-full transition-all duration-500 ease-out`}
+                    style={{ 
+                      width: `${projectStats.progress}%`,
+                      backgroundColor: getProgressColor(projectStats.progress)
+                    }}
                   ></div>
                 </div>
                 <div className="text-xs text-gray-500 text-center mt-2 font-medium">
-                  {getProgressMessage(progress)}
+                  {getProgressMessage(projectStats.progress)}
                 </div>
               </div>
             )}
@@ -342,16 +335,15 @@ const handleRefresh = async () => {
             <div>
               <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Tasks</h2>
               <p className="text-gray-600 text-sm mt-1">
-                {totalTasks === 0 ? 'No tasks yet' : `${totalTasks} task${totalTasks !== 1 ? 's' : ''} in total`}
-                {totalTasks > 0 && (
+                {projectStats.totalTasks === 0 ? 'No tasks yet' : `${projectStats.totalTasks} task${projectStats.totalTasks !== 1 ? 's' : ''} in total`}
+                {projectStats.totalTasks > 0 && (
                   <span className="ml-2 text-xs text-gray-500">
-                    ({completedTasks} completed • {pendingTasks} pending)
+                    ({projectStats.completedTasks} completed • {projectStats.pendingTasks} pending)
                   </span>
                 )}
               </p>
             </div>
             <div className="flex items-center gap-2 sm:gap-3">
-       
               <PrimaryButton
                 onClick={() => setShowAddTaskModal(true)}
                 showIcon={true}
@@ -375,25 +367,22 @@ const handleRefresh = async () => {
 
           {/* Tasks List */}
           {tasks.length === 0 ? (
-           <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-  <div className="text-gray-400 text-4xl sm:text-6xl mb-3 sm:mb-4">📝</div>
-  <div className="text-gray-500 text-lg mb-3 sm:mb-4">No tasks yet</div>
-  <p className="text-gray-400 text-sm mb-4 sm:mb-6 max-w-md mx-auto px-4">
-    Get started by adding your first task to this project. Tasks help you track progress and assign work to team members.
-  </p>
-  
-  {/* ✅ Center button horizontally */}
-  <div className="flex justify-center">
-    <PrimaryButton
-      onClick={() => setShowAddTaskModal(true)}
-      showIcon={true}
-      icon={FaPlus}
-    >
-      Add First Task
-    </PrimaryButton>
-  </div>
-</div>
-
+            <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <div className="text-gray-400 text-4xl sm:text-6xl mb-3 sm:mb-4">📝</div>
+              <div className="text-gray-500 text-lg mb-3 sm:mb-4">No tasks yet</div>
+              <p className="text-gray-400 text-sm mb-4 sm:mb-6 max-w-md mx-auto px-4">
+                Get started by adding your first task to this project. Tasks help you track progress and assign work to team members.
+              </p>
+              <div className="flex justify-center">
+                <PrimaryButton
+                  onClick={() => setShowAddTaskModal(true)}
+                  showIcon={true}
+                  icon={FaPlus}
+                >
+                  Add First Task
+                </PrimaryButton>
+              </div>
+            </div>
           ) : (
             <div className="space-y-3">
               {tasks.map(task => (
@@ -416,11 +405,11 @@ const handleRefresh = async () => {
                 <div className="flex items-center justify-center sm:justify-start gap-4">
                   <span className="flex items-center gap-1">
                     <FaCheck className="text-green-500 text-xs" />
-                    {completedTasks} completed
+                    {projectStats.completedTasks} completed
                   </span>
                   <span className="flex items-center gap-1">
                     <FaCircle className="text-primary/80 text-xs" />
-                    {pendingTasks} pending
+                    {projectStats.pendingTasks} pending
                   </span>
                 </div>
               </div>
