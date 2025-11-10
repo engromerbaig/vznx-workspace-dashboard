@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import { BaseProject } from '@/types/project';
 import ProjectCard from '@/components/ProjectCard';
+import ProgressCard from '@/components/ProgressCard';
 import AddProjectModal from '@/components/AddProjectModal';
 import PrimaryButton from '@/components/PrimaryButton';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaProjectDiagram, FaCheckCircle, FaClock, FaTasks } from 'react-icons/fa';
 import { toast } from '@/components/ToastProvider';
 
 export default function ProjectsPage() {
@@ -36,60 +37,62 @@ export default function ProjectsPage() {
   }, []);
 
   // Add new project
- // Add new project
-const handleAddProject = async (projectData: { name: string; description?: string }) => {
-  try {
-    const res = await fetch('/api/projects', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(projectData),
-    });
+  const handleAddProject = async (projectData: { name: string; description?: string }) => {
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projectData),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.status === 'success') {
-      setProjects(prev => [data.project, ...prev]);
-      setShowAddModal(false);
-
-      // Show success toast
-      toast.success(`Project "${data.project.name}" added successfully!`);
+      if (data.status === 'success') {
+        setProjects(prev => [data.project, ...prev]);
+        setShowAddModal(false);
+        toast.success(`Project "${data.project.name}" added successfully!`);
+      }
+    } catch (error) {
+      console.error('Failed to create project:', error);
+      toast.error('Failed to add project');
     }
-  } catch (error) {
-    console.error('Failed to create project:', error);
-    toast.error('Failed to add project');
-  }
-};
-
+  };
 
   // Delete project
-const handleDeleteProject = async (projectId: string) => {
-  try {
-    const res = await fetch(`/api/projects/${projectId}`, {
-      method: 'DELETE',
-    });
+  const handleDeleteProject = async (projectId: string) => {
+    try {
+      const res = await fetch(`/api/projects/${projectId}`, {
+        method: 'DELETE',
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (data.status === 'success') {
-      setProjects(prev => prev.filter(project => project._id !== projectId));
-      toast.success('Project deleted successfully'); // optional success toast
+      if (data.status === 'success') {
+        setProjects(prev => prev.filter(project => project._id !== projectId));
+        toast.success('Project deleted successfully');
+      }
+    } catch (error) {
+      console.error('Failed to delete project:', error);
+      toast.error('Failed to delete project');
     }
-  } catch (error) {
-    console.error('Failed to delete project:', error);
-    toast.error('Failed to delete project'); // optional error toast
-  }
-};
+  };
 
+  // Calculate project statistics
+  const projectStats = {
+    totalProjects: projects.length,
+    completedProjects: projects.filter(project => project.status === 'completed').length,
+    incompleteProjects: projects.filter(project => project.status !== 'completed').length,
+    totalTasks: projects.reduce((sum, project) => sum + (project.taskStats?.total || 0), 0)
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         
-   
         {/* Projects Header with count */}
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold text-gray-800">
-            Projects ({projects.length})
+            Projects
           </h2>
           <PrimaryButton
             onClick={() => setShowAddModal(true)}
@@ -100,18 +103,70 @@ const handleDeleteProject = async (projectId: string) => {
           </PrimaryButton>
         </div>
 
+        {/* Progress Cards for Project Stats */}
+        {projects.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <ProgressCard
+              title="Total Projects"
+              value={projectStats.totalProjects}
+              icon={<FaProjectDiagram />}
+              color="blue"
+              size="md"
+            />
+            
+            <ProgressCard
+              title="Completed"
+              value={projectStats.completedProjects}
+              icon={<FaCheckCircle />}
+              color="green"
+              size="md"
+            />
+            
+            <ProgressCard
+              title="In Progress"
+              value={projectStats.incompleteProjects}
+              icon={<FaClock />}
+              color="orange"
+              size="md"
+            />
+            
+            <ProgressCard
+              title="Total Tasks"
+              value={projectStats.totalTasks}
+              icon={<FaTasks />}
+              color="purple"
+              size="md"
+            />
+          </div>
+        )}
+
         {/* Projects Grid */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                <div className="h-3 bg-gray-200 rounded w-1/2 mb-6"></div>
-                <div className="h-2 bg-gray-200 rounded w-full mb-2"></div>
-                <div className="h-2 bg-gray-200 rounded w-5/6"></div>
+          <>
+            {/* Loading state for progress cards */}
+            {projects.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                {[1, 2, 3, 4].map(i => (
+                  <div key={i} className="bg-white rounded-xl p-5 border border-gray-200 animate-pulse min-h-[120px]">
+                    <div className="h-8 bg-gray-200 rounded w-3/4 mb-3"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            )}
+            
+            {/* Loading state for project cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map(i => (
+                <div key={i} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
+                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                  <div className="h-3 bg-gray-200 rounded w-1/2 mb-6"></div>
+                  <div className="h-2 bg-gray-200 rounded w-full mb-2"></div>
+                  <div className="h-2 bg-gray-200 rounded w-5/6"></div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : projects.length === 0 ? (
           // ✅ Centered No Projects UI
           <div className="text-center py-12 sm:py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
