@@ -187,8 +187,8 @@ export default function ProjectDetailsPage() {
             <div className="text-red-500 text-6xl mb-4">❌</div>
             <h1 className="text-2xl font-bold text-gray-800 mb-4">Project Not Found</h1>
             <p className="text-gray-600 mb-6">{error}</p>
-            <PrimaryButton className='cursor-pointer' bgColor='bg-primary/10' onClick={() => router.push('/dashboard')}>
-              Back to Dashboard
+            <PrimaryButton className='cursor-pointer' bgColor='bg-primary/10' onClick={() => router.push('/projects')}>
+              Back to Projects
             </PrimaryButton>
           </div>
         </div>
@@ -203,8 +203,8 @@ export default function ProjectDetailsPage() {
           <div className="bg-white rounded-lg shadow-md p-8 max-w-md mx-auto">
             <h1 className="text-2xl font-bold text-gray-800 mb-4">Project Not Found</h1>
             <p className="text-gray-600 mb-6">The project you're looking for doesn't exist or you don't have access to it.</p>
-            <PrimaryButton className='cursor-pointer' bgColor='bg-primary/10' onClick={() => router.push('/dashboard')}>
-              Back to Dashboard
+            <PrimaryButton className='cursor-pointer' bgColor='bg-primary/10' onClick={() => router.push('/projects')}>
+              Back to Projects
             </PrimaryButton>
           </div>
         </div>
@@ -220,7 +220,7 @@ export default function ProjectDetailsPage() {
         <div className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
             <button
-              onClick={() => router.push('/dashboard')}
+              onClick={() => router.push('/projects')}
               className="flex items-center gap-2 cursor-pointer text-primary hover:text-blue-800 transition-colors font-medium self-start"
             >
               <FaArrowLeft className='text-sm' />
