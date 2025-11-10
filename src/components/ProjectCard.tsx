@@ -80,7 +80,7 @@ const handleDelete = (e: React.MouseEvent) => {
 
   return (
     <div 
-      className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group relative min-h-[320px] cursor-pointer transform hover:-translate-y-1 border border-gray-100"
+      className="bg-white rounded-xl shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden group relative min-h-[320px] cursor-pointer transform hover:-translate-y-1 border animate-fadeIn border-gray-100"
       onClick={handleCardClick}
     >
       
