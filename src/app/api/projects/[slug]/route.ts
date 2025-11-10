@@ -333,10 +333,16 @@ export async function DELETE(
     const { slug } = await params;
     const db = await getDatabase();
     
-    // First get the project by slug to get its ID
-    const project = await db.collection('projects').findOne({
-      slug: slug
-    });
+    // Check if the parameter is a valid ObjectId (ID) or a slug
+    let query: any = { slug: slug };
+    
+    // If it looks like an ObjectId, search by _id instead
+    if (ObjectId.isValid(slug)) {
+      query = { _id: new ObjectId(slug) };
+    }
+
+    // First get the project to get its ID
+    const project = await db.collection('projects').findOne(query);
 
     if (!project) {
       return NextResponse.json(
@@ -347,9 +353,9 @@ export async function DELETE(
 
     const projectId = project._id.toString();
 
-    // Delete the project by slug
+    // Delete the project using the correct _id
     const result = await db.collection('projects').deleteOne({
-      slug: slug
+      _id: new ObjectId(projectId)
     });
 
     if (result.deletedCount === 0) {

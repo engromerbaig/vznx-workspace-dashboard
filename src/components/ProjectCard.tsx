@@ -11,6 +11,8 @@ import { getProgressColor, getProgressStatusText } from '@/utils/projectProgress
 import { getTaskStats } from '@/utils/taskStats';
 import ProgressPieChart from '@/components/charts/ProgressPieChart';
 import { useEffect } from 'react';
+import { toast } from '@/components/ToastProvider';
+
 
 interface ProjectCardProps {
   project: BaseProject;
