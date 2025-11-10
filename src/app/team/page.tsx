@@ -2,28 +2,33 @@
 
 import { useState, useEffect } from 'react';
 import { BaseTask } from '@/types/task';
+import { TeamMemberWithWorkload, TeamWorkloadStats } from '@/types/team';
 import TeamMemberCard from '@/components/TeamMemberCard';
 import AddTeamMemberModal from '@/components/AddTeamMemberModal';
 import ProgressCard from '@/components/ProgressCard';
+import CapacityLegend from '@/components/CapacityLegend';
 import PrimaryButton from '@/components/PrimaryButton';
+import { getCapacityInfo, calculateCapacity } from '@/utils/capacity';
 import { FaPlus, FaUsers, FaTasks, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from '@/components/ToastProvider';
 
-interface TeamMember {
-  _id: string;
-  name: string;
-  email: string;
-  role: string;
-  taskCount: number;
-  capacity: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
 export default function TeamPage() {
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [teamMembers, setTeamMembers] = useState<TeamMemberWithWorkload[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+
+  // Calculate team workload statistics
+  const getTeamStats = (members: TeamMemberWithWorkload[]): TeamWorkloadStats => {
+    return {
+      totalMembers: members.length,
+      totalTasks: members.reduce((sum, member) => sum + member.taskCount, 0),
+      comfortableLoad: members.filter(member => member.capacity < 60).length,
+      heavyLoad: members.filter(member => member.capacity >= 80).length,
+      averageCapacity: members.length > 0 
+        ? Math.round(members.reduce((sum, member) => sum + member.capacity, 0) / members.length)
+        : 0
+    };
+  };
 
   // Fetch team members and calculate workload
   const calculateTeamWorkload = async () => {
@@ -63,11 +68,9 @@ export default function TeamPage() {
       }
 
       // Calculate task counts and capacity for each member
-      const MAX_TASKS_PER_MEMBER = 8;
-      
       const membersWithWorkload = membersData.teamMembers.map((member: any) => {
         const taskCount = allTasks.filter(task => task.assignedTo === member.name).length;
-        const capacity = Math.min(Math.round((taskCount / MAX_TASKS_PER_MEMBER) * 100), 100);
+        const capacity = calculateCapacity(taskCount);
         
         return {
           ...member,
@@ -135,32 +138,8 @@ export default function TeamPage() {
     }
   };
 
-  const getCapacityColor = (capacity: number) => {
-    if (capacity < 60) return 'bg-green-500';
-    if (capacity < 80) return 'bg-yellow-500';
-    return 'bg-red-500';
-  };
-
-  const getCapacityTextColor = (capacity: number) => {
-    if (capacity < 60) return 'text-green-700';
-    if (capacity < 80) return 'text-yellow-700';
-    return 'text-red-700';
-  };
-
-  const getCapacityStatus = (capacity: number) => {
-    if (capacity < 60) return 'Comfortable';
-    if (capacity < 80) return 'Moderate';
-    return 'Heavy';
-  };
-
-  // Calculate summary statistics
-  const totalMembers = teamMembers.length;
-  const totalTasks = teamMembers.reduce((sum, member) => sum + member.taskCount, 0);
-  const comfortableLoad = teamMembers.filter(member => member.capacity < 60).length;
-  const heavyLoad = teamMembers.filter(member => member.capacity >= 80).length;
-  const averageCapacity = teamMembers.length > 0 
-    ? Math.round(teamMembers.reduce((sum, member) => sum + member.capacity, 0) / teamMembers.length)
-    : 0;
+  // Get team statistics
+  const teamStats = getTeamStats(teamMembers);
 
   if (isLoading) {
     return (
@@ -217,7 +196,7 @@ export default function TeamPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <ProgressCard
               title="Team Members"
-              value={totalMembers}
+              value={teamStats.totalMembers}
               icon={<FaUsers />}
               color="blue"
               size="md"
@@ -225,7 +204,7 @@ export default function TeamPage() {
             
             <ProgressCard
               title="Total Tasks"
-              value={totalTasks}
+              value={teamStats.totalTasks}
               icon={<FaTasks />}
               color="purple"
               size="md"
@@ -233,7 +212,7 @@ export default function TeamPage() {
             
             <ProgressCard
               title="Comfortable Load"
-              value={comfortableLoad}
+              value={teamStats.comfortableLoad}
               icon={<FaCheckCircle />}
               color="green"
               size="md"
@@ -241,7 +220,7 @@ export default function TeamPage() {
             
             <ProgressCard
               title="Heavy Load"
-              value={heavyLoad}
+              value={teamStats.heavyLoad}
               icon={<FaExclamationTriangle />}
               color="red"
               size="md"
@@ -250,23 +229,7 @@ export default function TeamPage() {
         )}
 
         {/* Capacity Legend */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Workload Status</h3>
-          <div className="flex gap-6 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded"></div>
-              <span className="text-gray-600">Comfortable (&lt;60%)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-yellow-500 rounded"></div>
-              <span className="text-gray-600">Moderate (60-80%)</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-500 rounded"></div>
-              <span className="text-gray-600">Heavy (&gt;80%)</span>
-            </div>
-          </div>
-        </div>
+        <CapacityLegend />
 
         {/* Team Grid */}
         {teamMembers.length === 0 ? (
@@ -283,16 +246,14 @@ export default function TeamPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {teamMembers.map(member => (
-              <TeamMemberCard
-                key={member._id}
-                member={member}
-                capacityColor={getCapacityColor(member.capacity)}
-                capacityTextColor={getCapacityTextColor(member.capacity)}
-                capacityStatus={getCapacityStatus(member.capacity)}
-                onDelete={handleDeleteTeamMember}
-              />
-            ))}
+{teamMembers.map(member => (
+  <TeamMemberCard
+    key={member._id}
+    member={member}
+    onDelete={handleDeleteTeamMember}
+  />
+))}
+
           </div>
         )}
 
