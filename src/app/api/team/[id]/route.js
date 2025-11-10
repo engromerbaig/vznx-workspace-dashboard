@@ -1,11 +1,14 @@
+// src/app/api/team/[id]/route.js
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { getCurrentUser } from '@/lib/server/auth-utils';
 import { ObjectId } from 'mongodb';
 
-export async function GET(request, { params }) {
+export async function GET(request, context) {
   try {
+    const params = await context.params; // <-- await context.params directly
     const { id } = params;
+
     const db = await getDatabase();
 
     // Find team member by ID
@@ -37,8 +40,9 @@ export async function GET(request, { params }) {
   }
 }
 
-export async function DELETE(request, { params }) {
+export async function DELETE(request, context) {
   try {
+    const params = await context.params; // <-- await context.params directly
     const currentUser = await getCurrentUser();
     if (!currentUser) {
       return NextResponse.json({ status: 'error', message: 'Unauthorized' }, { status: 401 });
