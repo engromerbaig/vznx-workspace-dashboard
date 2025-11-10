@@ -18,10 +18,11 @@ export const toast = {
     toastInstance.dismiss(); // Dismiss any existing toast
     return toastInstance.loading(message, options);
   },
-  custom: (message: React.ReactNode, options?: any) => {
-    toastInstance.dismiss(); // Dismiss any existing toast
-    return toastInstance.custom(message as any, options);
-  },
+custom: (message: React.ReactNode | ((t: any) => React.ReactNode), options?: any) => {
+  toastInstance.dismiss();
+  return toastInstance.custom(message as any, options);
+},
+
   dismiss: () => toastInstance.dismiss(),
 };
 

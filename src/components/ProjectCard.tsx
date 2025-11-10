@@ -53,10 +53,41 @@ export default function ProjectCard({ project, onDelete }: ProjectCardProps) {
   };
 
   // Handle delete with proper event propagation
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent card click when deleting
-    onDelete(project._id);
-  };
+const handleDelete = (e: React.MouseEvent) => {
+  e.stopPropagation();
+
+  toast.custom((t) => (
+    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-lg flex flex-col gap-3 w-72">
+      <p className="text-sm text-gray-800 font-medium">
+        Are you sure you want to delete <span className="font-semibold">{project.name}</span>?
+      </p>
+      <div className="flex justify-end gap-2">
+        <button
+          className="px-3 py-1 text-sm rounded-md border border-gray-300 text-gray-600 hover:bg-gray-100 transition"
+        >
+          Cancel
+        </button>
+
+        <button
+          onClick={async () => {
+            try {
+              await onDelete(project._id);
+              toast.success(`${project.name} deleted successfully`);
+            } catch (err) {
+              toast.error('Failed to delete project. Please try again.');
+            }
+          }}
+          className="px-3 py-1 text-sm rounded-md bg-red-500 text-white hover:bg-red-600 transition"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  ));
+};
+
+
+;
 
   const getProgressGradient = (progress: number) => {
     if (progress === 100) return 'from-green-500 to-green-600';

@@ -7,6 +7,7 @@ import ProjectCard from '@/components/ProjectCard';
 import AddProjectModal from '@/components/AddProjectModal';
 import PrimaryButton from '@/components/PrimaryButton';
 import { FaPlus } from 'react-icons/fa';
+import { toast } from '@/components/ToastProvider';
 
 export default function DashboardPage() {
   const { user } = useUser();
@@ -55,23 +56,24 @@ export default function DashboardPage() {
   };
 
   // Delete project
-  const handleDeleteProject = async (projectId: string) => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
+const handleDeleteProject = async (projectId: string) => {
+  try {
+    const res = await fetch(`/api/projects/${projectId}`, {
+      method: 'DELETE',
+    });
 
-    try {
-      const res = await fetch(`/api/projects/${projectId}`, {
-        method: 'DELETE',
-      });
+    const data = await res.json();
 
-      const data = await res.json();
-
-      if (data.status === 'success') {
-        setProjects(prev => prev.filter(project => project._id !== projectId));
-      }
-    } catch (error) {
-      console.error('Failed to delete project:', error);
+    if (data.status === 'success') {
+      setProjects(prev => prev.filter(project => project._id !== projectId));
+      toast.success('Project deleted successfully'); // optional success toast
     }
-  };
+  } catch (error) {
+    console.error('Failed to delete project:', error);
+    toast.error('Failed to delete project'); // optional error toast
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
