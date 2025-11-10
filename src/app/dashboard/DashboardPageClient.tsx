@@ -11,6 +11,7 @@ import TeamMemberCard from '@/components/TeamMemberCard';
 import ProgressCard from '@/components/ProgressCard';
 import AddProjectModal from '@/components/AddProjectModal';
 import PrimaryButton from '@/components/PrimaryButton';
+import SkeletonLoader from '@/components/SkeletonLoader';
 import { FaPlus, FaProjectDiagram, FaTasks, FaUsers, FaCheckCircle, FaArrowRight } from 'react-icons/fa';
 import { calculateCapacity } from '@/utils/capacity';
 import { toast } from '@/components/ToastProvider';
@@ -201,43 +202,58 @@ export default function DashboardPageClient() {
           <h2 className="text-xl font-bold mb-2 text-black">Welcome back, {user?.username}!</h2>
           <div className="flex items-center gap-4 text-sm text-gray-600">
             <span>Email: {user?.email}</span>
-        
           </div>
         </div>
 
         {/* Dashboard Stats using ProgressCard */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <ProgressCard
-            title="Total Projects"
-            value={dashboardStats.totalProjects}
-            icon={<FaProjectDiagram />}
-            color="blue"
-            size="md"
-          />
-          
-          <ProgressCard
-            title="Completed Projects"
-            value={dashboardStats.completedProjects}
-            icon={<FaCheckCircle />}
-            color="green"
-            size="md"
-          />
-          
-          <ProgressCard
-            title="Total Tasks"
-            value={dashboardStats.totalTasks}
-            icon={<FaTasks />}
-            color="purple"
-            size="md"
-          />
-          
-          <ProgressCard
-            title="Team Members"
-            value={dashboardStats.totalTeamMembers}
-            icon={<FaUsers />}
-            color="orange"
-            size="md"
-          />
+          {isLoading ? (
+            <>
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="bg-white rounded-lg shadow-md p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <SkeletonLoader width="w-12" height="h-12" variant="circle" />
+                  </div>
+                  <SkeletonLoader width="w-3/4" height="h-5" className="mb-2" />
+                  <SkeletonLoader width="w-1/2" height="h-8" />
+                </div>
+              ))}
+            </>
+          ) : (
+            <>
+              <ProgressCard
+                title="Total Projects"
+                value={dashboardStats.totalProjects}
+                icon={<FaProjectDiagram />}
+                color="blue"
+                size="md"
+              />
+              
+              <ProgressCard
+                title="Completed Projects"
+                value={dashboardStats.completedProjects}
+                icon={<FaCheckCircle />}
+                color="green"
+                size="md"
+              />
+              
+              <ProgressCard
+                title="Total Tasks"
+                value={dashboardStats.totalTasks}
+                icon={<FaTasks />}
+                color="purple"
+                size="md"
+              />
+              
+              <ProgressCard
+                title="Team Members"
+                value={dashboardStats.totalTeamMembers}
+                icon={<FaUsers />}
+                color="orange"
+                size="md"
+              />
+            </>
+          )}
         </div>
 
         {/* Recent Projects Section */}
@@ -265,11 +281,15 @@ export default function DashboardPageClient() {
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map(i => (
-                <div key={i} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2 mb-6"></div>
-                  <div className="h-2 bg-gray-200 rounded w-full mb-2"></div>
-                  <div className="h-2 bg-gray-200 rounded w-5/6"></div>
+                <div key={i} className="bg-white rounded-lg shadow-md p-6">
+                  <SkeletonLoader width="w-3/4" height="h-6" className="mb-4" />
+                  <SkeletonLoader width="w-1/2" height="h-4" className="mb-6" />
+                  <SkeletonLoader width="w-full" height="h-3" className="mb-2" />
+                  <SkeletonLoader width="w-5/6" height="h-3" className="mb-4" />
+                  <div className="flex gap-2 mt-4">
+                    <SkeletonLoader width="w-20" height="h-6" />
+                    <SkeletonLoader width="w-24" height="h-6" />
+                  </div>
                 </div>
               ))}
             </div>
@@ -277,17 +297,15 @@ export default function DashboardPageClient() {
             <div className="text-center py-12 bg-white rounded-lg shadow-md">
               <div className="text-gray-500 text-lg mb-4">No projects yet</div>
               <p className="text-gray-400 mb-6">Get started by creating your first project</p>
-                          <div className="flex justify-center">
-   <PrimaryButton
-                onClick={() => setShowAddModal(true)}
-                showIcon={true}
-                icon={FaPlus}
-              >
-                Create Your First Project
-              </PrimaryButton>
-                            </div>
-
-           
+              <div className="flex justify-center">
+                <PrimaryButton
+                  onClick={() => setShowAddModal(true)}
+                  showIcon={true}
+                  icon={FaPlus}
+                >
+                  Create Your First Project
+                </PrimaryButton>
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -318,11 +336,19 @@ export default function DashboardPageClient() {
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map(i => (
-                <div key={i} className="bg-white rounded-xl shadow-md p-6 animate-pulse min-h-[320px]">
-                  <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
-                  <div className="h-2 bg-gray-200 rounded w-full mb-2"></div>
-                  <div className="h-2 bg-gray-200 rounded w-5/6"></div>
+                <div key={i} className="bg-white rounded-xl shadow-md p-6 min-h-[320px]">
+                  <div className="flex items-center gap-4 mb-6">
+                    <SkeletonLoader width="w-16" height="h-16" variant="circle" />
+                    <div className="flex-1">
+                      <SkeletonLoader width="w-3/4" height="h-6" className="mb-2" />
+                      <SkeletonLoader width="w-1/2" height="h-4" />
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <SkeletonLoader width="w-full" height="h-4" />
+                    <SkeletonLoader width="w-5/6" height="h-4" />
+                    <SkeletonLoader width="w-full" height="h-20" className="mt-4" />
+                  </div>
                 </div>
               ))}
             </div>
