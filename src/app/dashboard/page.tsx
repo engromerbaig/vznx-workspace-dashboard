@@ -247,7 +247,7 @@ export default function DashboardPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => router.push('/projects')}
-                className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium"
+                className="flex cursor-pointer items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium"
               >
                 View All
                 <FaArrowRight className="text-sm transform group-hover:translate-x-1 transition-transform" />
@@ -308,7 +308,7 @@ export default function DashboardPage() {
             <h2 className="text-2xl font-bold text-gray-800">Team Members</h2>
             <button
               onClick={() => router.push('/team')}
-              className="flex items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium"
+              className="flex cursor-pointer items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium"
             >
               View All
               <FaArrowRight className="text-sm transform group-hover:translate-x-1 transition-transform" />

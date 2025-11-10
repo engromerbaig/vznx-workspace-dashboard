@@ -19,25 +19,38 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const toggleStatus = async () => {
-    if (isUpdating) return;
+ const toggleStatus = async () => {
+  if (isUpdating) return;
 
-    setIsUpdating(true);
-    try {
-      const newStatus = task.status === 'complete' ? 'incomplete' : 'complete';
-      const result = await updateTaskStatus(task._id, newStatus);
+  // 1️⃣ Optimistically update the task locally
+  const newStatus = task.status === 'complete' ? 'incomplete' : 'complete';
+  task.status = newStatus; // Directly mutate for instant UI change
+  onTaskUpdate?.(); // Trigger parent refresh or re-render immediately
 
-      if (result.success) {
-        toast.success(`Task marked as ${newStatus}`);
-        onTaskUpdate?.();
-      }
-    } catch (error) {
-      console.error('Failed to update task:', error);
+  setIsUpdating(true);
+  try {
+    // 2️⃣ Update status in backend
+    const result = await updateTaskStatus(task._id, newStatus);
+
+    if (!result.success) {
+      // Revert UI if backend fails
+      task.status = newStatus === 'complete' ? 'incomplete' : 'complete';
+      onTaskUpdate?.();
       toast.error('Failed to update task status');
-    } finally {
-      setIsUpdating(false);
+    } else {
+      toast.success(`Task marked as ${newStatus}`);
     }
-  };
+  } catch (error) {
+    // Revert UI on error
+    task.status = newStatus === 'complete' ? 'incomplete' : 'complete';
+    onTaskUpdate?.();
+    toast.error('Failed to update task status');
+    console.error('Failed to update task:', error);
+  } finally {
+    setIsUpdating(false);
+  }
+};
+
 
   const handleDelete = async () => {
    toast.customConfirm(
