@@ -6,147 +6,16 @@ import { getCurrentUser } from '@/lib/server/auth-utils';
 import { ObjectId } from 'mongodb';
 import { slugify, generateUniqueSlug } from '@/utils/slugify';
 
-// ✅ GET — Fetch all projects (now using slug instead of _id)
+// ✅ GET — Faster, leaner, indexed, minimal aggregation
 export async function GET() {
   try {
     const db = await getDatabase();
-    
-    const projects = await db.collection('projects').aggregate([
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'createdBy',
-          foreignField: '_id',
-          as: 'creator'
-        }
-      },
-      {
-        $unwind: {
-          path: '$creator',
-          preserveNullAndEmptyArrays: true
-        }
-      },
-      {
-        $project: {
-          name: 1,
-          slug: 1, // ✅ Include slug
-          status: 1,
-          progress: 1,
-          description: 1,
-          createdAt: 1,
-          updatedAt: 1,
-          taskStats: 1, // ✅ Use stored stats (real-time updated elsewhere)
-          createdBy: {
-            $cond: {
-              if: { $ne: ['$creator', null] },
-              then: '$creator.username',
-              else: 'system'
-            }
-          }
-        }
-      },
-      {
-        $sort: { createdAt: -1 }
-      }
-    ]).toArray();
 
-    const formattedProjects: BaseProject[] = projects.map(project => ({
-      _id: project._id.toString(),
-      name: project.name,
-      slug: project.slug,
-      status: project.status,
-      progress: project.progress,
-      description: project.description,
-      createdBy: project.createdBy,
-      taskStats: project.taskStats,
-      createdAt: project.createdAt.toISOString(),
-      updatedAt: project.updatedAt.toISOString()
-    }));
-
-    return NextResponse.json({ 
-      status: 'success', 
-      projects: formattedProjects 
-    });
-  } catch (error) {
-    console.error('Failed to fetch projects:', error);
-    return NextResponse.json(
-      { status: 'error', message: 'Failed to fetch projects' },
-      { status: 500 }
-    );
-  }
-}
-
-// ✅ POST — Create new project with unique slug
-export async function POST(request: Request) {
-  try {
-    const currentUser = await getCurrentUser();
-    
-    if (!currentUser) {
-      return NextResponse.json(
-        { status: 'error', message: 'Unauthorized' },
-        { status: 401 }
-      );
-    }
-
-    const { name, description, status = 'planning' }: { 
-      name: string; 
-      description?: string; 
-      status?: 'planning' | 'in-progress' | 'completed';
-    } = await request.json();
-
-    if (!name || name.trim() === '') {
-      return NextResponse.json(
-        { status: 'error', message: 'Project name is required' },
-        { status: 400 }
-      );
-    }
-
-    const db = await getDatabase();
-    const now = new Date();
-    
-    // ✅ Generate unique slug
-    const baseSlug = slugify(name);
-    const existingProjects = await db.collection('projects')
-      .find({ slug: { $regex: `^${baseSlug}` } })
-      .project({ slug: 1 })
-      .toArray();
-    const existingSlugs = existingProjects.map(p => p.slug);
-    const uniqueSlug = generateUniqueSlug(baseSlug, existingSlugs);
-
-    // ✅ Insert project
-    const project = {
-      name: name.trim(),
-      slug: uniqueSlug,
-      description: description?.trim(),
-      status,
-      progress: 0,
-      taskStats: { total: 0, completed: 0, incomplete: 0 }, // ✅ Default stats
-      createdBy: new ObjectId(currentUser._id),
-      createdAt: now,
-      updatedAt: now
-    };
-
-    const result = await db.collection('projects').insertOne(project);
-    
-    // ✅ Fetch created project with username
-    const newProject = await db.collection('projects').aggregate([
-      { $match: { _id: result.insertedId } },
-      {
-        $lookup: {
-          from: 'users',
-          localField: 'createdBy',
-          foreignField: '_id',
-          as: 'creator'
-        }
-      },
-      {
-        $unwind: {
-          path: '$creator',
-          preserveNullAndEmptyArrays: true
-        }
-      },
-      {
-        $project: {
+    // Project only needed fields — no heavy joins unless required
+    const projects = await db
+      .collection('projects')
+      .find({}, {
+        projection: {
           name: 1,
           slug: 1,
           status: 1,
@@ -155,44 +24,88 @@ export async function POST(request: Request) {
           taskStats: 1,
           createdAt: 1,
           updatedAt: 1,
-          createdBy: {
-            $cond: {
-              if: { $ne: ['$creator', null] },
-              then: '$creator.username',
-              else: 'system'
-            }
-          }
+          createdBy: 1
         }
-      }
-    ]).next();
+      })
+      .sort({ createdAt: -1 })
+      .limit(100) // ✅ optional pagination for speed
+      .toArray();
 
-    if (!newProject) {
-      throw new Error('Failed to create project');
+    // Preload all unique creator IDs for one batched user fetch (1 query, not N)
+    const creatorIds = [...new Set(projects.map(p => p.createdBy?.toString()).filter(Boolean))].map(id => new ObjectId(id));
+    const users = await db.collection('users')
+      .find({ _id: { $in: creatorIds } }, { projection: { _id: 1, username: 1 } })
+      .toArray();
+
+    const userMap = Object.fromEntries(users.map(u => [u._id.toString(), u.username]));
+
+    const formattedProjects: BaseProject[] = projects.map(p => ({
+      _id: p._id.toString(),
+      name: p.name,
+      slug: p.slug,
+      status: p.status,
+      progress: p.progress,
+      description: p.description,
+      createdBy: userMap[p.createdBy?.toString()] || 'system',
+      taskStats: p.taskStats,
+      createdAt: p.createdAt.toISOString(),
+      updatedAt: p.updatedAt.toISOString()
+    }));
+
+    return NextResponse.json({ status: 'success', projects: formattedProjects });
+  } catch (error) {
+    console.error('❌ Failed to fetch projects:', error);
+    return NextResponse.json({ status: 'error', message: 'Failed to fetch projects' }, { status: 500 });
+  }
+}
+
+// ✅ POST — Avoid extra DB read (faster)
+export async function POST(request: Request) {
+  try {
+    const currentUser = await getCurrentUser();
+    if (!currentUser) {
+      return NextResponse.json({ status: 'error', message: 'Unauthorized' }, { status: 401 });
     }
 
-    const formattedProject: BaseProject = {
-      _id: newProject._id.toString(),
-      name: newProject.name,
-      slug: newProject.slug,
-      status: newProject.status,
-      progress: newProject.progress,
-      description: newProject.description,
-      createdBy: newProject.createdBy,
-      taskStats: newProject.taskStats,
-      createdAt: newProject.createdAt.toISOString(),
-      updatedAt: newProject.updatedAt.toISOString()
+    const { name, description, status = 'planning' } = await request.json();
+    if (!name?.trim()) {
+      return NextResponse.json({ status: 'error', message: 'Project name is required' }, { status: 400 });
+    }
+
+    const db = await getDatabase();
+    const now = new Date();
+
+    // ✅ Fast slug uniqueness: get count instead of regex
+    const baseSlug = slugify(name);
+    const slugCount = await db.collection('projects').countDocuments({ slug: { $regex: `^${baseSlug}` } });
+    const uniqueSlug = slugCount === 0 ? baseSlug : `${baseSlug}-${slugCount + 1}`;
+
+    const newProject = {
+      name: name.trim(),
+      slug: uniqueSlug,
+      description: description?.trim() || '',
+      status,
+      progress: 0,
+      taskStats: { total: 0, completed: 0, incomplete: 0 },
+      createdBy: new ObjectId(currentUser._id),
+      createdAt: now,
+      updatedAt: now
     };
 
-    return NextResponse.json({ 
-      status: 'success', 
-      project: formattedProject 
-    }, { status: 201 });
+    const result = await db.collection('projects').insertOne(newProject);
 
+    // ✅ No need for aggregation refetch — we already know all fields
+    const formattedProject: BaseProject = {
+      _id: result.insertedId.toString(),
+      ...newProject,
+      createdBy: currentUser.username || 'system',
+      createdAt: now.toISOString(),
+      updatedAt: now.toISOString()
+    };
+
+    return NextResponse.json({ status: 'success', project: formattedProject }, { status: 201 });
   } catch (error) {
-    console.error('Failed to create project:', error);
-    return NextResponse.json(
-      { status: 'error', message: 'Failed to create project' },
-      { status: 500 }
-    );
+    console.error('❌ Failed to create project:', error);
+    return NextResponse.json({ status: 'error', message: 'Failed to create project' }, { status: 500 });
   }
 }

@@ -6,28 +6,40 @@ export async function GET() {
   try {
     const db = await getDatabase();
 
-    const teamMembers = await db.collection('teammembers').find({})
-      .sort({ createdAt: -1 })
-      .toArray();
+    const membersWithTaskCount = await db.collection('teammembers').aggregate([
+      {
+        $lookup: {
+          from: 'tasks',
+          localField: 'name',
+          foreignField: 'assignedTo',
+          as: 'tasks'
+        }
+      },
+      {
+        $addFields: {
+          taskCount: { $size: '$tasks' }
+        }
+      },
+      {
+        $project: {
+          tasks: 0 // remove tasks array, we only need count
+        }
+      },
+      { $sort: { createdAt: -1 } }
+    ]).toArray();
 
-    // For each member, count tasks assigned
-    const formattedMembers = await Promise.all(teamMembers.map(async (member) => {
-      const taskCount = await db.collection('tasks').countDocuments({ assignedTo: member.name });
-      return {
-        _id: member._id.toString(),
-        name: member.name,
-        email: member.email,
-        role: member.role,
-        createdAt: member.createdAt.toISOString(),
-        updatedAt: member.updatedAt.toISOString(),
-        taskCount,
-      };
+    const formattedMembers = membersWithTaskCount.map(member => ({
+      _id: member._id.toString(),
+      name: member.name,
+      email: member.email,
+      role: member.role,
+      createdAt: member.createdAt.toISOString(),
+      updatedAt: member.updatedAt.toISOString(),
+      taskCount: member.taskCount
     }));
 
-    return NextResponse.json({ 
-      status: 'success', 
-      teamMembers: formattedMembers 
-    });
+    return NextResponse.json({ status: 'success', teamMembers: formattedMembers });
+
   } catch (error) {
     console.error('Failed to fetch team members:', error);
     return NextResponse.json(
@@ -36,6 +48,7 @@ export async function GET() {
     );
   }
 }
+
 
 export async function POST(request: Request) {
   try {

@@ -1,3 +1,4 @@
+// src/app/api/tasks/route.ts
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
@@ -5,42 +6,31 @@ import { ObjectId } from 'mongodb';
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const assignedTo = searchParams.get('assignedTo');
-    
+    const assignedTo = searchParams.get('assignedTo'); // optional filter
+
     const db = await getDatabase();
-    
-    let matchQuery = {};
-    
-    // Filter by assignedTo if provided
-    if (assignedTo) {
-      matchQuery = { assignedTo };
-    }
-    
-    // Use aggregation to get tasks with project names
+
+    // Build the match query
+    const matchQuery: any = {};
+    if (assignedTo) matchQuery.assignedTo = assignedTo;
+
+    // Fetch all tasks in **one aggregation**
     const tasks = await db.collection('tasks').aggregate([
-      {
-        $match: matchQuery
-      },
+      { $match: matchQuery },
       {
         $addFields: {
-          // Convert projectId string to ObjectId for lookup
           projectObjectId: { $toObjectId: '$projectId' }
         }
       },
       {
         $lookup: {
           from: 'projects',
-          localField: 'projectObjectId',  // Use the converted ObjectId
+          localField: 'projectObjectId',
           foreignField: '_id',
           as: 'project'
         }
       },
-      {
-        $unwind: {
-          path: '$project',
-          preserveNullAndEmptyArrays: true
-        }
-      },
+      { $unwind: { path: '$project', preserveNullAndEmptyArrays: true } },
       {
         $project: {
           _id: 1,
@@ -54,12 +44,10 @@ export async function GET(request: Request) {
           createdBy: 1,
           lastModifiedBy: 1,
           projectId: 1,
-          projectName: '$project.name' // Add project name here
+          projectName: '$project.name'
         }
       },
-      {
-        $sort: { createdAt: -1 }
-      }
+      { $sort: { createdAt: -1 } }
     ]).toArray();
 
     const formattedTasks = tasks.map(task => ({
@@ -74,13 +62,10 @@ export async function GET(request: Request) {
       createdBy: task.createdBy,
       lastModifiedBy: task.lastModifiedBy,
       projectId: task.projectId?.toString(),
-      projectName: task.projectName || null // Include projectName
+      projectName: task.projectName || null
     }));
 
-    return NextResponse.json({ 
-      status: 'success', 
-      tasks: formattedTasks 
-    });
+    return NextResponse.json({ status: 'success', tasks: formattedTasks });
   } catch (error) {
     console.error('Failed to fetch tasks:', error);
     return NextResponse.json(
