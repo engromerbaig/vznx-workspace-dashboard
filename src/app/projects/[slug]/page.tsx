@@ -273,36 +273,36 @@ export default function ProjectDetailsPage() {
             </div>
 
             {/* Progress Overview using ProgressCard */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center mb-6">
-              <ProgressCard
-                title="Total Tasks"
-                value={projectStats.totalTasks}
-                icon={<FaTasks className="text-gray-500 text-lg" />}
-                color="gray"
-                size="md"
-              />
-              <ProgressCard
-                title="Completed"
-                value={projectStats.completedTasks}
-                icon={<FaCheck className="text-green-500 text-lg" />}
-                color="green"
-                size="md"
-              />
-              <ProgressCard
-                title="Pending"
-                value={projectStats.pendingTasks}
-                icon={<FaClock className="text-primary text-lg" />}
-                color="blue"
-                size="md"
-              />
-              <ProgressCard
-                title="Progress"
-                value={`${projectStats.progress}%`}
-                icon={<FaChartLine className="text-orange-500 text-lg" />}
-                color="orange"
-                size="md"
-              />
-            </div>
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center mb-6">
+  <ProgressCard
+    title="Total Tasks"
+    value={projectStats.totalTasks}
+    icon={<FaTasks />}
+    color="gray"
+    size="md"
+  />
+  <ProgressCard
+    title="Completed"
+    value={projectStats.completedTasks}
+    icon={<FaCheck />}
+    color="green"
+    size="md"
+  />
+  <ProgressCard
+    title="Pending"
+    value={projectStats.pendingTasks}
+    icon={<FaClock />}
+    color="blue"
+    size="md"
+  />
+  <ProgressCard
+    title="Progress"
+    value={`${projectStats.progress}%`}
+    icon={<FaChartLine />}
+    color="orange"
+    size="md"
+  />
+</div>
 
             {/* Progress Bar */}
             {projectStats.totalTasks > 0 && (

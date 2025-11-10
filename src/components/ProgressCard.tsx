@@ -58,7 +58,7 @@ export default function ProgressCard({
       text: 'text-purple-700', 
       label: 'text-purple-800',
       iconBg: 'from-purple-200/40 to-violet-300/30'
-    },
+    }
   };
 
   const sizeClasses = {
@@ -82,7 +82,7 @@ export default function ProgressCard({
       label: 'text-lg font-semibold', 
       iconSize: 'text-6xl',
       container: 'min-h-[140px]'
-    },
+    }
   };
 
   const currentColor = colorClasses[color];
@@ -108,11 +108,11 @@ export default function ProgressCard({
       {icon && (
         <div className={`
           absolute 
-          -bottom-2 
-          -right-2 
+          bottom-2 
+          right-2 
           ${currentSize.iconSize} 
           ${currentColor.text} 
-          opacity-40 
+          opacity-20 
           transform 
           group-hover:scale-110 
           group-hover:opacity-60 
