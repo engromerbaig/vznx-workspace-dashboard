@@ -1,31 +1,53 @@
-// src/app/team/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import { BaseTask } from '@/types/task';
 import TeamMemberCard from '@/components/TeamMemberCard';
+import AddTeamMemberModal from '@/components/AddTeamMemberModal';
+import PrimaryButton from '@/components/PrimaryButton';
+import { FaPlus } from 'react-icons/fa';
+import { toast } from '@/components/ToastProvider';
 
 interface TeamMember {
-  id: string;
+  _id: string;
   name: string;
   email: string;
   role: string;
   taskCount: number;
-  capacity: number; // 0-100 percentage
+  capacity: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function TeamPage() {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showAddModal, setShowAddModal] = useState(false);
 
-  // Calculate team workload
+  // Fetch team members and calculate workload
   const calculateTeamWorkload = async () => {
     try {
-      // Fetch all tasks
+      // Fetch team members from API
+      const membersRes = await fetch('/api/team');
+      const membersData = await membersRes.json();
+
+      if (membersData.status !== 'success') {
+        setTeamMembers([]);
+        return;
+      }
+
+      // Fetch all tasks for workload calculation
       const projectsRes = await fetch('/api/projects');
       const projectsData = await projectsRes.json();
 
-      if (projectsData.status !== 'success') return;
+      if (projectsData.status !== 'success') {
+        setTeamMembers(membersData.teamMembers.map((member: any) => ({
+          ...member,
+          taskCount: 0,
+          capacity: 0
+        })));
+        return;
+      }
 
       // Get tasks for all projects
       const allTasks: BaseTask[] = [];
@@ -39,18 +61,10 @@ export default function TeamPage() {
         }
       }
 
-      // Define team members (hardcoded for now, can be from database later)
-      const members = [
-        { id: '1', name: 'Sarah Chen', email: 'sarah@vznx.com', role: 'Lead Architect' },
-        { id: '2', name: 'Mike Rodriguez', email: 'mike@vznx.com', role: 'Structural Engineer' },
-        { id: '3', name: 'Emma Wilson', email: 'emma@vznx.com', role: 'Interior Designer' },
-        { id: '4', name: 'Alex Thompson', email: 'alex@vznx.com', role: 'Project Manager' },
-      ];
-
       // Calculate task counts and capacity for each member
-      const MAX_TASKS_PER_MEMBER = 8; // 8 tasks = 100% capacity
+      const MAX_TASKS_PER_MEMBER = 8;
       
-      const membersWithWorkload = members.map(member => {
+      const membersWithWorkload = membersData.teamMembers.map((member: any) => {
         const taskCount = allTasks.filter(task => task.assignedTo === member.name).length;
         const capacity = Math.min(Math.round((taskCount / MAX_TASKS_PER_MEMBER) * 100), 100);
         
@@ -64,6 +78,7 @@ export default function TeamPage() {
       setTeamMembers(membersWithWorkload);
     } catch (error) {
       console.error('Failed to calculate team workload:', error);
+      setTeamMembers([]);
     } finally {
       setIsLoading(false);
     }
@@ -72,6 +87,52 @@ export default function TeamPage() {
   useEffect(() => {
     calculateTeamWorkload();
   }, []);
+
+  // Add new team member
+  const handleAddTeamMember = async (memberData: { name: string; email: string; role: string }) => {
+    try {
+      const res = await fetch('/api/team', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(memberData),
+      });
+
+      const data = await res.json();
+
+      if (data.status === 'success') {
+        // Recalculate workload to include the new member
+        await calculateTeamWorkload();
+        setShowAddModal(false);
+        toast.success(`Team member "${data.teamMember.name}" added successfully!`);
+      } else {
+        toast.error(data.message || 'Failed to add team member');
+      }
+    } catch (error) {
+      console.error('Failed to create team member:', error);
+      toast.error('Failed to add team member');
+    }
+  };
+
+  // Delete team member
+  const handleDeleteTeamMember = async (memberId: string) => {
+    try {
+      const res = await fetch(`/api/team/${memberId}`, {
+        method: 'DELETE',
+      });
+
+      const data = await res.json();
+
+      if (data.status === 'success') {
+        setTeamMembers(prev => prev.filter(member => member._id !== memberId));
+        toast.success('Team member deleted successfully');
+      } else {
+        toast.error(data.message || 'Failed to delete team member');
+      }
+    } catch (error) {
+      console.error('Failed to delete team member:', error);
+      toast.error('Failed to delete team member');
+    }
+  };
 
   const getCapacityColor = (capacity: number) => {
     if (capacity < 60) return 'bg-green-500';
@@ -116,9 +177,18 @@ export default function TeamPage() {
       <div className="max-w-7xl mx-auto">
         
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">Team Overview</h1>
-          <p className="text-gray-600 mt-2">Monitor team workload and capacity</p>
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">Team Overview</h1>
+            <p className="text-gray-600 mt-2">Monitor team workload and capacity</p>
+          </div>
+          <PrimaryButton
+            onClick={() => setShowAddModal(true)}
+            showIcon={true}
+            icon={FaPlus}
+          >
+            Add Team Member
+          </PrimaryButton>
         </div>
 
         {/* Capacity Legend */}
@@ -143,18 +213,26 @@ export default function TeamPage() {
         {/* Team Grid */}
         {teamMembers.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-lg shadow-md">
-            <div className="text-gray-500 text-lg mb-4">No team data available</div>
-            <p className="text-gray-400">Add some tasks to see team workload distribution</p>
+            <div className="text-gray-500 text-lg mb-4">No team members yet</div>
+            <p className="text-gray-400 mb-6">Add team members to see workload distribution</p>
+            <PrimaryButton
+              onClick={() => setShowAddModal(true)}
+              showIcon={true}
+              icon={FaPlus}
+            >
+              Add Your First Team Member
+            </PrimaryButton>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {teamMembers.map(member => (
               <TeamMemberCard
-                key={member.id}
+                key={member._id}
                 member={member}
                 capacityColor={getCapacityColor(member.capacity)}
                 capacityTextColor={getCapacityTextColor(member.capacity)}
                 capacityStatus={getCapacityStatus(member.capacity)}
+                onDelete={handleDeleteTeamMember}
               />
             ))}
           </div>
@@ -190,6 +268,13 @@ export default function TeamPage() {
             </div>
           </div>
         )}
+
+        {/* Add Team Member Modal */}
+        <AddTeamMemberModal
+          isOpen={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSubmit={handleAddTeamMember}
+        />
       </div>
     </div>
   );
