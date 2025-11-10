@@ -3,10 +3,7 @@ import { getDatabase } from '@/lib/mongodb';
 import { getCurrentUser } from '@/lib/server/auth-utils';
 import { ObjectId } from 'mongodb';
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request, { params }) {
   try {
     const { id } = params;
     const db = await getDatabase();
@@ -33,17 +30,14 @@ export async function GET(
     return NextResponse.json({ status: 'success', teamMember: formattedMember });
   } catch (error) {
     console.error('Failed to fetch team member:', error);
-    if (error instanceof Error && error.message.includes('ObjectId')) {
+    if (error.message && error.message.includes('ObjectId')) {
       return NextResponse.json({ status: 'error', message: 'Invalid team member ID' }, { status: 400 });
     }
     return NextResponse.json({ status: 'error', message: 'Failed to fetch team member' }, { status: 500 });
   }
 }
 
-export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(request, { params }) {
   try {
     const currentUser = await getCurrentUser();
     if (!currentUser) {
