@@ -31,7 +31,7 @@ export default function TeamPage() {
       const allTasks: BaseTask[] = [];
       
       for (const project of projectsData.projects) {
-        const tasksRes = await fetch(`/api/projects/${project._id}/tasks`);
+        const tasksRes = await fetch(`/api/projects/${project.slug}/tasks`);
         const tasksData = await tasksRes.json();
         
         if (tasksData.status === 'success') {
