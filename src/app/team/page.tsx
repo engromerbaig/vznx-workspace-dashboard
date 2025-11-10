@@ -4,8 +4,9 @@ import { useState, useEffect } from 'react';
 import { BaseTask } from '@/types/task';
 import TeamMemberCard from '@/components/TeamMemberCard';
 import AddTeamMemberModal from '@/components/AddTeamMemberModal';
+import ProgressCard from '@/components/ProgressCard';
 import PrimaryButton from '@/components/PrimaryButton';
-import { FaPlus } from 'react-icons/fa';
+import { FaPlus, FaUsers, FaTasks, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from '@/components/ToastProvider';
 
 interface TeamMember {
@@ -152,11 +153,31 @@ export default function TeamPage() {
     return 'Heavy';
   };
 
+  // Calculate summary statistics
+  const totalMembers = teamMembers.length;
+  const totalTasks = teamMembers.reduce((sum, member) => sum + member.taskCount, 0);
+  const comfortableLoad = teamMembers.filter(member => member.capacity < 60).length;
+  const heavyLoad = teamMembers.filter(member => member.capacity >= 80).length;
+  const averageCapacity = teamMembers.length > 0 
+    ? Math.round(teamMembers.reduce((sum, member) => sum + member.capacity, 0) / teamMembers.length)
+    : 0;
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-3xl font-bold text-gray-800 mb-8">Team Overview</h1>
+          
+          {/* Loading state for summary stats */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-xl p-5 border border-gray-200 animate-pulse min-h-[120px]">
+                <div className="h-8 bg-gray-200 rounded w-3/4 mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+              </div>
+            ))}
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
@@ -190,6 +211,43 @@ export default function TeamPage() {
             Add Team Member
           </PrimaryButton>
         </div>
+
+        {/* Summary Stats at the top using ProgressCard */}
+        {teamMembers.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <ProgressCard
+              title="Team Members"
+              value={totalMembers}
+              icon={<FaUsers />}
+              color="blue"
+              size="md"
+            />
+            
+            <ProgressCard
+              title="Total Tasks"
+              value={totalTasks}
+              icon={<FaTasks />}
+              color="purple"
+              size="md"
+            />
+            
+            <ProgressCard
+              title="Comfortable Load"
+              value={comfortableLoad}
+              icon={<FaCheckCircle />}
+              color="green"
+              size="md"
+            />
+            
+            <ProgressCard
+              title="Heavy Load"
+              value={heavyLoad}
+              icon={<FaExclamationTriangle />}
+              color="red"
+              size="md"
+            />
+          </div>
+        )}
 
         {/* Capacity Legend */}
         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
@@ -235,37 +293,6 @@ export default function TeamPage() {
                 onDelete={handleDeleteTeamMember}
               />
             ))}
-          </div>
-        )}
-
-        {/* Summary Stats */}
-        {teamMembers.length > 0 && (
-          <div className="mt-8 bg-white rounded-lg shadow-md p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Team Summary</h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-gray-800">{teamMembers.length}</div>
-                <div className="text-sm text-gray-600">Team Members</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-blue-600">
-                  {teamMembers.reduce((sum, member) => sum + member.taskCount, 0)}
-                </div>
-                <div className="text-sm text-gray-600">Total Tasks</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">
-                  {teamMembers.filter(member => member.capacity < 60).length}
-                </div>
-                <div className="text-sm text-gray-600">Comfortable Load</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-red-600">
-                  {teamMembers.filter(member => member.capacity >= 80).length}
-                </div>
-                <div className="text-sm text-gray-600">Heavy Load</div>
-              </div>
-            </div>
           </div>
         )}
 
