@@ -5,7 +5,7 @@ import { getDatabase } from '@/lib/mongodb';
 import { BaseProject } from '@/types/project';
 
 interface PageProps {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 // Fetch project from DB
@@ -25,7 +25,8 @@ async function getProject(slug: string): Promise<BaseProject | null> {
 
 // Dynamic metadata
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const project = await getProject(params.slug);
+  const { slug } = await params;
+  const project = await getProject(slug);
 
   if (!project) {
     return {
@@ -42,5 +43,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function ProjectPage({ params }: PageProps) {
-  return <ProjectDetailsPageClient slug={params.slug} />;
+  const { slug } = await params;
+  return <ProjectDetailsPageClient slug={slug} />;
 }
