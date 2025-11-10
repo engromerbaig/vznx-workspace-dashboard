@@ -13,6 +13,8 @@ import { FaSync } from 'react-icons/fa';
 import { createTask } from '@/lib/actions/taskActions';
 import { formatDateTime, formatTime } from '@/utils/dateFormatter';
 import { getStatusColors } from '@/utils/projectStatus';
+import { toast } from '@/components/ToastProvider';
+
 
 export default function ProjectDetailsPage() {
   const params = useParams();
@@ -86,13 +88,15 @@ export default function ProjectDetailsPage() {
       if (!project) return;
       
       const result = await createTask(project._id, taskData);
-      
-      if (result.success) {
-        setShowAddTaskModal(false);
-        await fetchProjectData();
-      } else {
-        throw new Error(result.error || 'Failed to create task');
-      }
+if (result.success) {
+  toast.success('Task added successfully'); // ✅ Toast
+  setShowAddTaskModal(false);
+  await fetchProjectData();
+} else {
+  throw new Error(result.error || 'Failed to create task');
+}
+
+
     } catch (error) {
       console.error('Failed to create task:', error);
       setError(error instanceof Error ? error.message : 'Failed to create task');
@@ -100,9 +104,18 @@ export default function ProjectDetailsPage() {
   };
 
   // Manual refresh
-  const handleRefresh = async () => {
+const handleRefresh = async () => {
+  try {
+    setIsRefreshing(true);
     await fetchProjectData();
-  };
+    toast.success('Project and tasks refreshed'); // ✅ Toast
+  } catch (err) {
+    toast.error('Failed to refresh project data');
+  } finally {
+    setIsRefreshing(false);
+  }
+};
+
 
   // Handle task updates (for TaskItem callback)
   const handleTaskUpdate = () => {

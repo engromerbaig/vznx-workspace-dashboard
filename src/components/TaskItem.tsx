@@ -1,4 +1,3 @@
-// src/components/TaskItem.tsx (Updated)
 'use client';
 
 import { BaseTask } from '@/types/task';
@@ -7,6 +6,7 @@ import { FaCalendar } from 'react-icons/fa';
 import { formatDateTime } from '@/utils/dateFormatter';
 import { useState } from 'react';
 import { updateTaskStatus, deleteTask } from '@/lib/actions/taskActions';
+import { toast } from '@/components/ToastProvider';
 
 interface TaskItemProps {
   task: BaseTask;
@@ -19,34 +19,61 @@ export default function TaskItem({ task, onTaskUpdate }: TaskItemProps) {
 
   const toggleStatus = async () => {
     if (isUpdating) return;
-    
+
     setIsUpdating(true);
     try {
       const newStatus = task.status === 'complete' ? 'incomplete' : 'complete';
       const result = await updateTaskStatus(task._id, newStatus);
-      
-      if (result.success && onTaskUpdate) {
-        onTaskUpdate(); // Trigger parent refresh if needed
+
+      if (result.success) {
+        toast.success(`Task marked as ${newStatus}`); // Toast for status update
+        onTaskUpdate?.(); // Trigger parent refresh if needed
       }
     } catch (error) {
       console.error('Failed to update task:', error);
+      toast.error('Failed to update task status');
     } finally {
       setIsUpdating(false);
     }
   };
 
-  const handleDelete = async () => {
-    if (!confirm('Are you sure you want to delete this task?')) return;
+const handleDelete = async () => {
+  // Show a confirmation toast
+  toast.custom((t) => (
+    <div
+      className={`bg-white border border-gray-200 rounded-lg p-4 shadow-md flex flex-col sm:flex-row items-center gap-4 ${
+        t.visible ? 'animate-enter' : 'animate-leave'
+      }`}
+    >
+      <span className="text-gray-800">Are you sure you want to delete this task?</span>
+      <div className="flex gap-2 mt-2 sm:mt-0">
+        <button
+          onClick={async () => {
+            try {
+              const result = await deleteTask(task._id);
+              if (result.success) {
+                toast.success('Task deleted successfully'); // success toast
+                onTaskUpdate?.(); // refresh parent
+              }
+            } catch (error) {
+              console.error('Failed to delete task:', error);
+              toast.error('Failed to delete task'); // failure toast
+            }
+          }}
+          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+        >
+          Yes
+        </button>
+        <button
+          className="bg-gray-200 text-gray-800 px-3 py-1 rounded hover:bg-gray-300 transition"
+        >
+          No
+        </button>
+      </div>
+    </div>
+  ));
+};
 
-    try {
-      const result = await deleteTask(task._id);
-      if (result.success && onTaskUpdate) {
-        onTaskUpdate(); // Trigger parent refresh
-      }
-    } catch (error) {
-      console.error('Failed to delete task:', error);
-    }
-  };
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -99,7 +126,7 @@ export default function TaskItem({ task, onTaskUpdate }: TaskItemProps) {
             </button>
             <button
               onClick={handleDelete}
-              className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+              className="p-2 text-red-400 cursor-pointer hover:text-red-600 hover:bg-red-50 rounded transition-colors"
               title="Delete task"
             >
               <FaTrash className="text-sm" />

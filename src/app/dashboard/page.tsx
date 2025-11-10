@@ -36,24 +36,30 @@ export default function DashboardPage() {
   }, []);
 
   // Add new project
-  const handleAddProject = async (projectData: { name: string; description?: string }) => {
-    try {
-      const res = await fetch('/api/projects', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(projectData),
-      });
+ // Add new project
+const handleAddProject = async (projectData: { name: string; description?: string }) => {
+  try {
+    const res = await fetch('/api/projects', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(projectData),
+    });
 
-      const data = await res.json();
+    const data = await res.json();
 
-      if (data.status === 'success') {
-        setProjects(prev => [data.project, ...prev]);
-        setShowAddModal(false);
-      }
-    } catch (error) {
-      console.error('Failed to create project:', error);
+    if (data.status === 'success') {
+      setProjects(prev => [data.project, ...prev]);
+      setShowAddModal(false);
+
+      // Show success toast
+      toast.success(`Project "${data.project.name}" added successfully!`);
     }
-  };
+  } catch (error) {
+    console.error('Failed to create project:', error);
+    toast.error('Failed to add project');
+  }
+};
+
 
   // Delete project
 const handleDeleteProject = async (projectId: string) => {
