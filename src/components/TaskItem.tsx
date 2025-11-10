@@ -38,41 +38,23 @@ export default function TaskItem({ task, onTaskUpdate }: TaskItemProps) {
   };
 
 const handleDelete = async () => {
-  // Show a confirmation toast
-  toast.custom((t) => (
-    <div
-      className={`bg-white border border-gray-200 rounded-lg p-4 shadow-md flex flex-col sm:flex-row items-center gap-4 ${
-        t.visible ? 'animate-enter' : 'animate-leave'
-      }`}
-    >
-      <span className="text-gray-800">Are you sure you want to delete this task?</span>
-      <div className="flex gap-2 mt-2 sm:mt-0">
-        <button
-          onClick={async () => {
-            try {
-              const result = await deleteTask(task._id);
-              if (result.success) {
-                toast.success('Task deleted successfully'); // success toast
-                onTaskUpdate?.(); // refresh parent
-              }
-            } catch (error) {
-              console.error('Failed to delete task:', error);
-              toast.error('Failed to delete task'); // failure toast
-            }
-          }}
-          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
-        >
-          Yes
-        </button>
-        <button
-          className="bg-gray-200 text-gray-800 px-3 py-1 rounded hover:bg-gray-300 transition"
-        >
-          No
-        </button>
-      </div>
-    </div>
-  ));
+  toast.customConfirm(
+    `Are you sure you want to delete ${task.name}?`,
+    async () => {
+      try {
+        const result = await deleteTask(task._id);
+        if (result.success) {
+          toast.success('Task deleted successfully');
+          onTaskUpdate?.();
+        }
+      } catch (error) {
+        console.error('Failed to delete task:', error);
+        toast.error('Failed to delete task');
+      }
+    }
+  );
 };
+
 
 
   const toggleExpand = () => {

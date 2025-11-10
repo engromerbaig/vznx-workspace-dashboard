@@ -23,6 +23,40 @@ custom: (message: React.ReactNode | ((t: any) => React.ReactNode), options?: any
   return toastInstance.custom(message as any, options);
 },
 
+customConfirm: (message: string, onConfirm: () => void, onCancel?: () => void) => {
+  toastInstance.dismiss(); // dismiss existing toast
+  return toastInstance.custom((t) => (
+    <div
+      className={`bg-white border border-gray-200 rounded-lg p-4 shadow-md flex flex-col sm:flex-row items-center gap-4 ${
+        t.visible ? 'animate-enter' : 'animate-leave'
+      }`}
+    >
+      <span className="text-gray-800">{message}</span>
+      <div className="flex gap-2 mt-2 sm:mt-0 ml-auto">
+        <button
+          onClick={() => {
+            toastInstance.dismiss(t.id);
+            onCancel?.();
+          }}
+          className="bg-gray-200 text-gray-800 px-3 py-1 rounded hover:bg-gray-300 transition"
+        >
+          No
+        </button>
+        <button
+          onClick={() => {
+            toastInstance.dismiss(t.id);
+            onConfirm();
+          }}
+          className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+        >
+          Yes
+        </button>
+      </div>
+    </div>
+  ));
+},
+
+
   dismiss: () => toastInstance.dismiss(),
 };
 
