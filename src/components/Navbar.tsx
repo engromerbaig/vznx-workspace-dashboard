@@ -87,7 +87,7 @@ export default function Navbar() {
               <button
                 onClick={handleGlobalLogout}
                 disabled={isLoggingOut}
-                className={`w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                className={`w-full flex items-center cursor-pointer justify-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                   isLoggingOut
                     ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                     : 'bg-red-600/20 text-red-400 hover:bg-red-600/30 hover:text-red-300 border border-red-600/30'
