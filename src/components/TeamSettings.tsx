@@ -2,7 +2,7 @@
 'use client';
 
 import { useState } from 'react';
-import { FaCog, FaUsers } from 'react-icons/fa';
+import { FaCog, FaUsers, FaSave, FaTimes } from 'react-icons/fa';
 import InputField from './InputField';
 import Modal from './Modal';
 import PrimaryButton from './PrimaryButton';
@@ -37,24 +37,33 @@ export default function TeamSettings({ maxCapacity, onMaxCapacityChange }: TeamS
 
   return (
     <div className="relative">
-      {/* Settings Button */}
-      <button
+      {/* Settings Button using PrimaryButton */}
+      <PrimaryButton
         onClick={() => setIsOpen(true)}
-        className="flex items-center gap-3 px-4 py-3 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-xl transition-all duration-200 hover:shadow-md group"
+        bgColor="bg-primary/10"
+        textColor="text-primary/70"
+        hoverColor="bg-primary/40"
+        hoverTextColor="text-primary"
+        border={true}
+        borderColor="border-blue-200"
+        hoverBorderColor="border-blue-300"
+        rounded="rounded-xl"
+        shadow={true}
+        showIcon={true}
+        icon={FaCog}
+        iconPosition="left"
+        className="px-4 py-3 gap-3"
       >
-        <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg group-hover:bg-blue-200 transition-colors">
-          <FaCog className="text-primary text-lg" />
-        </div>
         <div className="text-left">
-          <div className="text-sm font-semibold text-primary/70">Team Settings</div>
-          <div className="text-xs text-primary">Max Capacity: {maxCapacity} tasks</div>
+          <div className="text-sm font-semibold">Team Settings</div>
+          <div className="text-xs">Max Capacity: {maxCapacity} tasks</div>
         </div>
-      </button>
+      </PrimaryButton>
 
       {/* Modal */}
       <Modal isOpen={isOpen} onClose={handleClose}>
         <div className="flex items-center gap-3 mb-6">
-          <div className="flex items-center justify-center w-12 h-12 bg-blue-100 rounded-xl">
+          <div className="flex items-center justify-center w-12 h-12 bg-primary/40 rounded-xl">
             <FaUsers className="text-primary text-xl" />
           </div>
           <div>
@@ -83,21 +92,41 @@ export default function TeamSettings({ maxCapacity, onMaxCapacityChange }: TeamS
           </div>
 
           <div className="flex gap-3 pt-4">
+            {/* Cancel Button using PrimaryButton */}
             <PrimaryButton
               type="button"
               onClick={handleClose}
               disabled={isSubmitting}
+              bgColor="bg-gray-600"
+              textColor="text-white"
+              hoverColor="bg-gray-700"
+              border={true}
+              borderColor="border-gray-500"
+              rounded="rounded-lg"
+              showIcon={true}
+              icon={FaTimes}
+              iconPosition="left"
               className="flex-1"
             >
               Cancel
             </PrimaryButton>
 
+            {/* Save Button using PrimaryButton */}
             <PrimaryButton
               type="button"
               onClick={handleSave}
               disabled={!tempCapacity || parseInt(tempCapacity) < 1 || parseInt(tempCapacity) > 20 || isSubmitting}
               isLoading={isSubmitting}
               loadingText="Saving..."
+              bgColor="bg-primary"
+              textColor="text-white"
+              hoverColor="bg-primary/90"
+              border={true}
+              borderColor="border-primary"
+              rounded="rounded-lg"
+              showIcon={true}
+              icon={FaSave}
+              iconPosition="left"
               className="flex-1"
             >
               Save Changes
