@@ -1,3 +1,4 @@
+// app/team/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,6 +9,8 @@ import TeamSettings from '@/components/TeamSettings';
 import ProgressCard from '@/components/ProgressCard';
 import CapacityLegend from '@/components/CapacityLegend';
 import PrimaryButton from '@/components/PrimaryButton';
+import Pagination from '@/components/Pagination';
+import { usePagination } from '@/hooks/usePagination';
 import { FaPlus, FaUsers, FaTasks, FaCheckCircle, FaExclamationTriangle, FaCog } from 'react-icons/fa';
 import { toast } from '@/components/ToastProvider';
 
@@ -24,16 +27,25 @@ export default function TeamPageClient() {
   const [globalMaxCapacity, setGlobalMaxCapacity] = useState(8);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [totalTeamMembersCount, setTotalTeamMembersCount] = useState(0);
 
-  // Fetch team members with server-side capacity calculations
-  const fetchTeamMembers = async () => {
+  const pagination = usePagination({
+    totalItems: totalTeamMembersCount, // Use server-side total count
+    pageSize: 6, 
+    initialPage: 1,
+    maxVisiblePages: 5
+  });
+
+  // Fetch team members with pagination
+  const fetchTeamMembers = async (page: number = 1) => {
     try {
       setIsLoading(true);
-      const response = await fetch('/api/team');
+      const response = await fetch(`/api/team?page=${page}&limit=6`);
       const data = await response.json();
 
       if (data.status === 'success') {
         setTeamMembers(data.teamMembers);
+        setTotalTeamMembersCount(data.pagination.totalMembers);
         setTeamStats(data.teamStats || calculateTeamStats(data.teamMembers));
         
         // Set global max capacity from the first member (all should be same)
@@ -89,6 +101,11 @@ export default function TeamPageClient() {
     };
   };
 
+  // Fetch team members when page changes
+  useEffect(() => {
+    fetchTeamMembers(pagination.currentPage);
+  }, [pagination.currentPage]);
+
   // Update global max capacity
   const handleMaxCapacityChange = async (newCapacity: number) => {
     try {
@@ -105,7 +122,7 @@ export default function TeamPageClient() {
       if (data.status === 'success') {
         setGlobalMaxCapacity(newCapacity);
         // Refresh team members to get updated capacities
-        await fetchTeamMembers();
+        await fetchTeamMembers(pagination.currentPage);
         toast.success(`Max capacity updated to ${newCapacity} tasks per member`);
       } else {
         toast.error(data.message || 'Failed to update max capacity');
@@ -130,7 +147,8 @@ export default function TeamPageClient() {
       const data = await res.json();
 
       if (data.status === 'success') {
-        await fetchTeamMembers(); // Refresh with server-side calculations
+        // Refresh with server-side calculations
+        await fetchTeamMembers(pagination.currentPage);
         setShowAddModal(false);
         toast.success(`Team member "${data.teamMember.name}" added successfully!`);
       } else {
@@ -149,10 +167,8 @@ export default function TeamPageClient() {
       const data = await res.json();
 
       if (data.status === 'success') {
-        // Optimistic update - remove from UI immediately
-        setTeamMembers(prev => prev.filter(member => member._id !== memberId));
-        // Refresh stats
-        await fetchTeamMembers();
+        // Refresh current page after deletion
+        await fetchTeamMembers(pagination.currentPage);
         toast.success('Team member deleted successfully');
       } else {
         toast.error(data.message || 'Failed to delete team member');
@@ -162,10 +178,6 @@ export default function TeamPageClient() {
       toast.error('Failed to delete team member');
     }
   };
-
-  useEffect(() => {
-    fetchTeamMembers();
-  }, []);
 
   if (isLoading) {
     return (
@@ -182,7 +194,7 @@ export default function TeamPageClient() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="bg-white rounded-xl p-5 border border-gray-200 animate-pulse min-h-[120px]">
                 <div className="h-8 bg-gray-200 rounded w-3/4 mb-3"></div>
@@ -191,8 +203,8 @@ export default function TeamPageClient() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map(i => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
               <div key={i} className="bg-white rounded-xl shadow-md p-6 animate-pulse min-h-[320px]">
                 <div className="h-6 bg-gray-200 rounded w-3/4 mb-4"></div>
                 <div className="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
@@ -215,9 +227,14 @@ export default function TeamPageClient() {
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
           <div className="flex-1">
             <h1 className="text-3xl font-bold text-gray-800">Team Overview</h1>
-            <p className="text-gray-600 mt-2">
-              Monitor team workload and capacity • {teamStats.totalMaxCapacity} total capacity available
-            </p>
+        <p className="text-gray-600 mt-2">
+  {teamStats.totalMaxCapacity} total capacity available
+  {totalTeamMembersCount > 0 && (
+    <span className="text-gray-500 text-sm ml-2">
+      • Showing {((pagination.currentPage - 1) * 6) + 1}-{Math.min(pagination.currentPage * 6, totalTeamMembersCount)} of {totalTeamMembersCount} members
+    </span>
+  )}
+</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
             <TeamSettings 
@@ -235,8 +252,8 @@ export default function TeamPageClient() {
           </div>
         </div>
 
-        {/* Stats Cards - Fixed: Removed subtitle prop */}
-        {teamMembers.length > 0 && (
+        {/* Stats Cards */}
+        {totalTeamMembersCount > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <ProgressCard 
               title="Team Members" 
@@ -270,7 +287,7 @@ export default function TeamPageClient() {
         )}
 
         {/* Team Stats Summary */}
-        {teamMembers.length > 0 && (
+        {totalTeamMembersCount > 0 && (
           <div className="bg-white rounded-xl p-6 border border-gray-200 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
               <div className="p-4">
@@ -296,7 +313,7 @@ export default function TeamPageClient() {
         <CapacityLegend />
 
         {/* Team Members Grid */}
-        {teamMembers.length === 0 ? (
+        {totalTeamMembersCount === 0 ? (
           <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-200">
             <div className="flex justify-center mb-4">
               <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
@@ -325,15 +342,39 @@ export default function TeamPageClient() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
-            {teamMembers.map(member => (
-              <TeamMemberCard 
-                key={member._id} 
-                member={member} 
-                onDelete={handleDeleteTeamMember} 
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 mb-8">
+              {teamMembers.map(member => (
+                <TeamMemberCard 
+                  key={member._id} 
+                  member={member} 
+                  onDelete={handleDeleteTeamMember} 
+                />
+              ))}
+            </div>
+
+            {/* Pagination */}
+            <Pagination
+              currentPage={pagination.currentPage}
+              totalPages={pagination.totalPages}
+              visiblePages={pagination.visiblePages}
+              onPageChange={(page) => {
+                pagination.goToPage(page);
+                // The useEffect will handle the fetch
+              }}
+              onPrev={() => {
+                pagination.prevPage();
+                // The useEffect will handle the fetch
+              }}
+              onNext={() => {
+                pagination.nextPage();
+                // The useEffect will handle the fetch
+              }}
+              canPrev={pagination.canPrevPage}
+              canNext={pagination.canNextPage}
+              className="mt-8"
+            />
+          </>
         )}
 
         {/* Add Team Member Modal */}

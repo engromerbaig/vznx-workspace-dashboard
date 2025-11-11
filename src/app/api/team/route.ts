@@ -4,10 +4,19 @@ import { getDatabase } from '@/lib/mongodb';
 import { getCurrentUser } from '@/lib/server/auth-utils';
 import { calculateCapacity, calculateTeamStats } from '@/lib/server/capacity-utils';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '6');
+    const skip = (page - 1) * limit;
+
     const db = await getDatabase();
 
+    // Get total count for pagination info
+    const totalMembers = await db.collection('teammembers').countDocuments();
+
+    // Get paginated team members with task counts
     const membersWithTaskCount = await db.collection('teammembers').aggregate([
       {
         $lookup: {
@@ -28,7 +37,9 @@ export async function GET() {
           tasks: 0
         }
       },
-      { $sort: { createdAt: -1 } }
+      { $sort: { createdAt: -1 } },
+      { $skip: skip },
+      { $limit: limit }
     ]).toArray();
 
     // Calculate capacity for each member on server side
@@ -48,13 +59,58 @@ export async function GET() {
       };
     });
 
-    // Calculate team stats
-    const teamStats = calculateTeamStats(formattedMembers);
+    // Calculate team stats from ALL members (not just current page)
+    const allMembersWithTaskCount = await db.collection('teammembers').aggregate([
+      {
+        $lookup: {
+          from: 'tasks',
+          localField: 'name',
+          foreignField: 'assignedTo',
+          as: 'tasks'
+        }
+      },
+      {
+        $addFields: {
+          taskCount: { $size: '$tasks' },
+          maxCapacity: { $ifNull: ['$maxCapacity', 8] }
+        }
+      },
+      {
+        $project: {
+          tasks: 0
+        }
+      }
+    ]).toArray();
+
+    const allFormattedMembers = allMembersWithTaskCount.map(member => {
+      const capacity = calculateCapacity(member.taskCount, member.maxCapacity);
+      
+      return {
+        _id: member._id.toString(),
+        name: member.name,
+        email: member.email,
+        role: member.role,
+        maxCapacity: member.maxCapacity,
+        createdAt: member.createdAt.toISOString(),
+        updatedAt: member.updatedAt.toISOString(),
+        taskCount: member.taskCount,
+        capacity
+      };
+    });
+
+    const teamStats = calculateTeamStats(allFormattedMembers);
 
     return NextResponse.json({ 
       status: 'success', 
       teamMembers: formattedMembers,
-      teamStats 
+      teamStats,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalMembers / limit),
+        totalMembers,
+        hasNext: skip + limit < totalMembers,
+        hasPrev: page > 1
+      }
     });
 
   } catch (error) {
