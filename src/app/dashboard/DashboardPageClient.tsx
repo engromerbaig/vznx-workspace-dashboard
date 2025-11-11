@@ -1,3 +1,4 @@
+// app/dashboard/page.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -35,7 +36,7 @@ export default function DashboardPageClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Fetch all data for dashboard - UPDATED WITH SERVER-SIDE TEAM CALCULATIONS
+  // Fetch all data for dashboard - FIXED TEAM MEMBERS COUNT
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
@@ -48,8 +49,8 @@ export default function DashboardPageClient() {
         setProjects(projectsData.projects);
       }
 
-      // ✅ FETCH TEAM MEMBERS WITH SERVER-SIDE WORKLOAD CALCULATIONS
-      const teamRes = await fetch('/api/team');
+      // ✅ FETCH TEAM MEMBERS WITH PAGINATION TO GET ACCURATE COUNT
+      const teamRes = await fetch('/api/team?page=1&limit=6'); // Only need first page for display
       const teamData = await teamRes.json();
 
       if (teamData.status === 'success') {
@@ -60,12 +61,12 @@ export default function DashboardPageClient() {
       const statsRes = await fetch('/api/projects/stats');
       const statsData = await statsRes.json();
 
-      if (statsData.status === 'success') {
+      if (statsData.status === 'success' && teamData.status === 'success') {
         setDashboardStats({
           totalProjects: statsData.stats.totalProjects,
           completedProjects: statsData.stats.completedProjects,
           totalTasks: statsData.stats.totalTasks,
-          totalTeamMembers: teamData.teamMembers?.length || 0
+          totalTeamMembers: teamData.pagination?.totalMembers || teamData.teamMembers?.length || 0 // ✅ Use pagination total
         });
       } else {
         // Fallback to calculated stats if stats API fails
@@ -77,7 +78,7 @@ export default function DashboardPageClient() {
           totalTasks: projectsData.projects.reduce((sum: number, project: BaseProject) => 
             sum + (project.taskStats?.total || 0), 0
           ),
-          totalTeamMembers: teamData.teamMembers?.length || 0
+          totalTeamMembers: teamData.pagination?.totalMembers || teamData.teamMembers?.length || 0 // ✅ Use pagination total
         });
       }
     } catch (error) {
@@ -219,6 +220,7 @@ export default function DashboardPageClient() {
                 size="md"
               />
               
+              {/* ✅ Now shows correct total */}
               <ProgressCard
                 title="Team Members"
                 value={dashboardStats.totalTeamMembers}
