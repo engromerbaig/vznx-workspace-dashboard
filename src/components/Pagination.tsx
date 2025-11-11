@@ -27,19 +27,18 @@ export default function Pagination({
   if (totalPages <= 1) return null;
 
   return (
-    <div className={`flex items-center justify-center space-x-2 ${className}`}>
-      {/* Previous Button */}
+    <div className={`flex items-center justify-center space-x-1 ${className}`}>
+      {/* Previous Button - Caret Only */}
       <button
         onClick={onPrev}
         disabled={!canPrev}
-        className={`flex items-center px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors ${
+        className={`flex items-center justify-center p-2 rounded-full transition-all duration-200 cursor-pointer ${
           canPrev
-            ? 'bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400'
-            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            ? 'text-primary hover:bg-primary/20'
+            : 'text-gray-300 cursor-not-allowed'
         }`}
       >
-        <FaChevronLeft className="w-4 h-4 mr-1" />
-        Previous
+        <FaChevronLeft className="w-4 h-4" />
       </button>
 
       {/* Page Numbers */}
@@ -47,16 +46,16 @@ export default function Pagination({
         {visiblePages.map((page, index) => (
           <div key={index}>
             {page === -1 ? (
-              <span className="px-3 py-2 text-gray-500">
+              <span className="px-2 py-1 text-primary">
                 <FaEllipsisH className="w-4 h-4" />
               </span>
             ) : (
               <button
                 onClick={() => onPageChange(page)}
-                className={`min-w-[40px] px-3 py-2 rounded-lg border text-sm font-medium transition-colors ${
+                className={`min-w-[40px] h-10 px-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer ${
                   page === currentPage
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                    ? 'bg-primary text-white shadow-sm'
+                    : 'text-gray-600 hover:bg-primary/20 hover:text-gray-900'
                 }`}
               >
                 {page}
@@ -66,18 +65,17 @@ export default function Pagination({
         ))}
       </div>
 
-      {/* Next Button */}
+      {/* Next Button - Caret Only */}
       <button
         onClick={onNext}
         disabled={!canNext}
-        className={`flex items-center px-3 py-2 rounded-lg border border-gray-300 text-sm font-medium transition-colors ${
+        className={`flex items-center justify-center p-2 rounded-full transition-all duration-200 cursor-pointer ${
           canNext
-            ? 'bg-white text-gray-700 hover:bg-gray-50 hover:border-gray-400'
-            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            ? 'text-primary hover:bg-primary/20'
+            : 'text-gray-300 cursor-not-allowed'
         }`}
       >
-        Next
-        <FaChevronRight className="w-4 h-4 ml-1" />
+        <FaChevronRight className="w-4 h-4" />
       </button>
     </div>
   );
