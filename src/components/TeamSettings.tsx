@@ -40,19 +40,14 @@ export default function TeamSettings({ maxCapacity, onMaxCapacityChange }: TeamS
       {/* Settings Button using PrimaryButton */}
       <PrimaryButton
         onClick={() => setIsOpen(true)}
-        bgColor="bg-primary/10"
-        textColor="text-primary/70"
-        hoverColor="bg-primary/40"
-        hoverTextColor="text-primary"
+      
         border={true}
-        borderColor="border-blue-200"
-        hoverBorderColor="border-blue-300"
-        rounded="rounded-xl"
+      
         shadow={true}
         showIcon={true}
         icon={FaCog}
         iconPosition="left"
-        className="px-4 py-3 gap-3"
+        className="px-4 py-1 gap-3"
       >
         <div className="text-left">
           <div className="text-sm font-semibold">Team Settings</div>

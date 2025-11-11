@@ -99,12 +99,7 @@ export default function AddTeamMemberModal({
           max="20"
         />
 
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
-          <div className="text-xs text-blue-800">
-            💡 <strong>Capacity Note:</strong> This sets the maximum number of tasks this member can handle. 
-            The team default is {defaultMaxCapacity} tasks.
-          </div>
-        </div>
+       
 
         <div className="flex gap-3 pt-4">
           <PrimaryButton
