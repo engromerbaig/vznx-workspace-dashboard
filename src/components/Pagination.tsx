@@ -26,11 +26,37 @@ export default function Pagination({
 }: PaginationProps) {
   if (totalPages <= 1) return null;
 
+  // Smooth scroll to top function
+  const scrollToTop = () => {
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    });
+  };
+
+  // Enhanced page change handler with scroll
+  const handlePageChange = (page: number) => {
+    onPageChange(page);
+    scrollToTop();
+  };
+
+  // Enhanced previous handler with scroll
+  const handlePrev = () => {
+    onPrev();
+    scrollToTop();
+  };
+
+  // Enhanced next handler with scroll
+  const handleNext = () => {
+    onNext();
+    scrollToTop();
+  };
+
   return (
-    <div className={`flex items-center justify-center space-x-1 ${className}`}>
+    <div className={`flex border-t-2 border-border-color items-center justify-center space-x-1 ${className}`}>
       {/* Previous Button - Caret Only */}
       <button
-        onClick={onPrev}
+        onClick={handlePrev}
         disabled={!canPrev}
         className={`flex items-center justify-center p-2 rounded-full transition-all duration-200 cursor-pointer ${
           canPrev
@@ -51,8 +77,8 @@ export default function Pagination({
               </span>
             ) : (
               <button
-                onClick={() => onPageChange(page)}
-                className={`min-w-[40px] h-10 px-3 rounded-lg text-base font-medium transition-all duration-200 cursor-pointer ${
+                onClick={() => handlePageChange(page)}
+                className={`min-w-[40px] h-10 px-3 rounded-lg text-base font-semibold transition-all duration-200 cursor-pointer ${
                   page === currentPage
                     ? 'bg-primary text-white shadow-sm'
                     : 'text-gray-600 hover:bg-primary/20 hover:text-gray-900'
@@ -67,7 +93,7 @@ export default function Pagination({
 
       {/* Next Button - Caret Only */}
       <button
-        onClick={onNext}
+        onClick={handleNext}
         disabled={!canNext}
         className={`flex items-center justify-center p-2 rounded-full transition-all duration-200 cursor-pointer ${
           canNext

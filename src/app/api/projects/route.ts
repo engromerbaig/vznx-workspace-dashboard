@@ -6,12 +6,20 @@ import { getCurrentUser } from '@/lib/server/auth-utils';
 import { ObjectId } from 'mongodb';
 import { slugify, generateUniqueSlug } from '@/utils/slugify';
 
-// ✅ GET — Faster, leaner, indexed, minimal aggregation
-export async function GET() {
+// ✅ GET — Server-side pagination for optimal performance
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '6');
+    const skip = (page - 1) * limit;
+
     const db = await getDatabase();
 
-    // Project only needed fields — no heavy joins unless required
+    // Get total count for pagination info
+    const totalProjects = await db.collection('projects').countDocuments();
+
+    // Get paginated projects
     const projects = await db
       .collection('projects')
       .find({}, {
@@ -28,7 +36,8 @@ export async function GET() {
         }
       })
       .sort({ createdAt: -1 })
-      .limit(100) // ✅ optional pagination for speed
+      .skip(skip)
+      .limit(limit)
       .toArray();
 
     // Preload all unique creator IDs for one batched user fetch (1 query, not N)
@@ -52,14 +61,24 @@ export async function GET() {
       updatedAt: p.updatedAt.toISOString()
     }));
 
-    return NextResponse.json({ status: 'success', projects: formattedProjects });
+    return NextResponse.json({ 
+      status: 'success', 
+      projects: formattedProjects,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalProjects / limit),
+        totalProjects,
+        hasNext: skip + limit < totalProjects,
+        hasPrev: page > 1
+      }
+    });
   } catch (error) {
     console.error('❌ Failed to fetch projects:', error);
     return NextResponse.json({ status: 'error', message: 'Failed to fetch projects' }, { status: 500 });
   }
 }
 
-// ✅ POST — Avoid extra DB read (faster)
+// ✅ POST — Avoid extra DB read (faster) - No changes needed
 export async function POST(request: Request) {
   try {
     const currentUser = await getCurrentUser();

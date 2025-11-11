@@ -16,25 +16,43 @@ import { toast } from '@/components/ToastProvider';
 export default function ProjectsPageClient() {
   const { user } = useUser();
   const [projects, setProjects] = useState<BaseProject[]>([]);
-  const [allProjects, setAllProjects] = useState<BaseProject[]>([]);
+  const [allProjectsStats, setAllProjectsStats] = useState<{
+    totalProjects: number;
+    completedProjects: number;
+    incompleteProjects: number;
+    totalTasks: number;
+  }>({
+    totalProjects: 0,
+    completedProjects: 0,
+    incompleteProjects: 0,
+    totalTasks: 0
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [totalProjectsCount, setTotalProjectsCount] = useState(0);
 
   const pagination = usePagination({
-    totalItems: allProjects.length,
-    pageSize: 6, // Show 6 projects per page
+    totalItems: totalProjectsCount, // Use server-side total count
+    pageSize: 6,
     initialPage: 1,
     maxVisiblePages: 5
   });
 
-  // Fetch projects
-  const fetchProjects = async () => {
+  // Fetch projects with pagination
+  const fetchProjects = async (page: number = 1) => {
     try {
-      const res = await fetch('/api/projects');
+      setIsLoading(true);
+      const res = await fetch(`/api/projects?page=${page}&limit=6`);
       const data = await res.json();
       
       if (data.status === 'success') {
-        setAllProjects(data.projects);
+        setProjects(data.projects);
+        setTotalProjectsCount(data.pagination.totalProjects);
+        
+        // If we're on the first page, also fetch stats for all projects
+        if (page === 1) {
+          await fetchAllProjectsStats();
+        }
       }
     } catch (error) {
       console.error('Failed to fetch projects:', error);
@@ -43,16 +61,41 @@ export default function ProjectsPageClient() {
     }
   };
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
+  // Fetch stats for all projects (separate call for accurate stats)
+  const fetchAllProjectsStats = async () => {
+    try {
+      const res = await fetch('/api/projects/stats'); // We'll create this endpoint
+      const data = await res.json();
+      
+      if (data.status === 'success') {
+        setAllProjectsStats(data.stats);
+      }
+    } catch (error) {
+      console.error('Failed to fetch project stats:', error);
+      // Fallback: calculate from current page if stats endpoint fails
+      calculateStatsFromCurrent();
+    }
+  };
 
-  // Update visible projects when pagination changes
+  // Fallback: calculate stats from current page data (less accurate)
+  const calculateStatsFromCurrent = () => {
+    // This is a fallback - not as accurate but better than nothing
+    const completed = projects.filter(p => p.status === 'completed').length;
+    const incomplete = projects.filter(p => p.status !== 'completed').length;
+    const totalTasks = projects.reduce((sum, project) => sum + (project.taskStats?.total || 0), 0);
+    
+    setAllProjectsStats({
+      totalProjects: totalProjectsCount,
+      completedProjects: completed,
+      incompleteProjects: incomplete,
+      totalTasks: totalTasks
+    });
+  };
+
+  // Fetch projects when page changes
   useEffect(() => {
-    const startIndex = pagination.startIndex;
-    const endIndex = pagination.endIndex + 1; // endIndex is inclusive
-    setProjects(allProjects.slice(startIndex, endIndex));
-  }, [allProjects, pagination.startIndex, pagination.endIndex]);
+    fetchProjects(pagination.currentPage);
+  }, [pagination.currentPage]);
 
   // Add new project
   const handleAddProject = async (projectData: { name: string; description?: string }) => {
@@ -66,10 +109,10 @@ export default function ProjectsPageClient() {
       const data = await res.json();
 
       if (data.status === 'success') {
-        const updatedProjects = [data.project, ...allProjects];
-        setAllProjects(updatedProjects);
+        // Refresh the current page and stats
+        await fetchProjects(pagination.currentPage);
+        await fetchAllProjectsStats();
         setShowAddModal(false);
-        pagination.goToPage(1); // Go to first page to see the new project
         toast.success(`Project "${data.project.name}" added successfully!`);
       }
     } catch (error) {
@@ -88,28 +131,15 @@ export default function ProjectsPageClient() {
       const data = await res.json();
 
       if (data.status === 'success') {
-        const updatedProjects = allProjects.filter(project => project._id !== projectId);
-        setAllProjects(updatedProjects);
-        
-        // If current page becomes empty after deletion, go to previous page
-        if (projects.length === 1 && pagination.currentPage > 1) {
-          pagination.prevPage();
-        }
-        
+        // Refresh current page and stats after deletion
+        await fetchProjects(pagination.currentPage);
+        await fetchAllProjectsStats();
         toast.success('Project deleted successfully');
       }
     } catch (error) {
       console.error('Failed to delete project:', error);
       toast.error('Failed to delete project');
     }
-  };
-
-  // Calculate project statistics from ALL projects
-  const projectStats = {
-    totalProjects: allProjects.length,
-    completedProjects: allProjects.filter(project => project.status === 'completed').length,
-    incompleteProjects: allProjects.filter(project => project.status !== 'completed').length,
-    totalTasks: allProjects.reduce((sum, project) => sum + (project.taskStats?.total || 0), 0)
   };
 
   return (
@@ -122,9 +152,9 @@ export default function ProjectsPageClient() {
             <h2 className="text-2xl font-bold text-gray-800">
               Projects
             </h2>
-            {allProjects.length > 0 && (
+            {totalProjectsCount > 0 && (
               <p className="text-gray-600 text-sm mt-1">
-                Showing {pagination.startIndex + 1}-{Math.min(pagination.endIndex + 1, allProjects.length)} of {allProjects.length} projects
+                Showing {((pagination.currentPage - 1) * 6) + 1}-{Math.min(pagination.currentPage * 6, totalProjectsCount)} of {totalProjectsCount} projects
               </p>
             )}
           </div>
@@ -138,11 +168,11 @@ export default function ProjectsPageClient() {
         </div>
 
         {/* Progress Cards for Project Stats */}
-        {allProjects.length > 0 && (
+        {totalProjectsCount > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <ProgressCard
               title="Total Projects"
-              value={projectStats.totalProjects}
+              value={allProjectsStats.totalProjects}
               icon={<FaProjectDiagram />}
               color="blue"
               size="md"
@@ -150,7 +180,7 @@ export default function ProjectsPageClient() {
             
             <ProgressCard
               title="Completed"
-              value={projectStats.completedProjects}
+              value={allProjectsStats.completedProjects}
               icon={<FaCheckCircle />}
               color="green"
               size="md"
@@ -158,7 +188,7 @@ export default function ProjectsPageClient() {
             
             <ProgressCard
               title="In Progress"
-              value={projectStats.incompleteProjects}
+              value={allProjectsStats.incompleteProjects}
               icon={<FaClock />}
               color="orange"
               size="md"
@@ -166,7 +196,7 @@ export default function ProjectsPageClient() {
             
             <ProgressCard
               title="Total Tasks"
-              value={projectStats.totalTasks}
+              value={allProjectsStats.totalTasks}
               icon={<FaTasks />}
               color="purple"
               size="md"
@@ -178,7 +208,7 @@ export default function ProjectsPageClient() {
         {isLoading ? (
           <>
             {/* Loading state for progress cards */}
-            {allProjects.length > 0 && (
+            {totalProjectsCount > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 {[1, 2, 3, 4].map(i => (
                   <div key={i} className="bg-white rounded-xl p-5 border border-gray-200 animate-pulse min-h-[120px]">
@@ -191,7 +221,7 @@ export default function ProjectsPageClient() {
             
             {/* Loading state for project cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map(i => (
+              {[1, 2, 3, 4, 5, 6].map(i => (
                 <div key={i} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
                   <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
                   <div className="h-3 bg-gray-200 rounded w-1/2 mb-6"></div>
@@ -201,7 +231,7 @@ export default function ProjectsPageClient() {
               ))}
             </div>
           </>
-        ) : allProjects.length === 0 ? (
+        ) : totalProjectsCount === 0 ? (
           // ✅ Centered No Projects UI
           <div className="text-center py-12 sm:py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
             <div className="text-gray-400 text-5xl sm:text-6xl mb-3 sm:mb-4">📂</div>
@@ -236,9 +266,18 @@ export default function ProjectsPageClient() {
               currentPage={pagination.currentPage}
               totalPages={pagination.totalPages}
               visiblePages={pagination.visiblePages}
-              onPageChange={pagination.goToPage}
-              onPrev={pagination.prevPage}
-              onNext={pagination.nextPage}
+              onPageChange={(page) => {
+                pagination.goToPage(page);
+                // The useEffect will handle the fetch
+              }}
+              onPrev={() => {
+                pagination.prevPage();
+                // The useEffect will handle the fetch
+              }}
+              onNext={() => {
+                pagination.nextPage();
+                // The useEffect will handle the fetch
+              }}
               canPrev={pagination.canPrevPage}
               canNext={pagination.canNextPage}
               className="mt-8"

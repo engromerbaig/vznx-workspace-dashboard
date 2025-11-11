@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import { useUser } from '@/context/UserContext';
 import { useRouter } from 'next/navigation';
 import { BaseProject } from '@/types/project';
-import { BaseTask } from '@/types/task';
 import { TeamMemberWithWorkload } from '@/types/team';
 import ProjectCard from '@/components/ProjectCard';
 import TeamMemberCard from '@/components/TeamMemberCard';
@@ -13,7 +12,6 @@ import AddProjectModal from '@/components/AddProjectModal';
 import PrimaryButton from '@/components/PrimaryButton';
 import SkeletonLoader from '@/components/SkeletonLoader';
 import { FaPlus, FaProjectDiagram, FaTasks, FaUsers, FaCheckCircle, FaArrowRight } from 'react-icons/fa';
-import { calculateCapacity } from '@/utils/capacity';
 import { toast } from '@/components/ToastProvider';
 
 interface DashboardStats {
@@ -37,73 +35,49 @@ export default function DashboardPageClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
 
-  // Calculate team workload - SAME METHOD AS TEAM PAGE
-  const calculateTeamWorkload = async (members: any[], allTasks: BaseTask[]) => {
-    return members.map((member: any) => {
-      const taskCount = allTasks.filter(task => task.assignedTo === member.name).length;
-      const capacity = calculateCapacity(taskCount);
-      
-      return {
-        ...member,
-        taskCount,
-        capacity
-      };
-    });
-  };
-
-  // Fetch all data for dashboard - UPDATED WITH PROPER WORKLOAD CALCULATION
+  // Fetch all data for dashboard - UPDATED WITH SERVER-SIDE TEAM CALCULATIONS
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
 
-      // Fetch projects and tasks first
-      const projectsRes = await fetch('/api/projects');
+      // Fetch projects with pagination (first page only for recent projects)
+      const projectsRes = await fetch('/api/projects?page=1&limit=6');
       const projectsData = await projectsRes.json();
-      
-      let allTasks: BaseTask[] = [];
       
       if (projectsData.status === 'success') {
         setProjects(projectsData.projects);
-
-        // Get tasks for all projects - SAME AS TEAM PAGE
-        for (const project of projectsData.projects) {
-          const tasksRes = await fetch(`/api/projects/${project.slug}/tasks`);
-          const tasksData = await tasksRes.json();
-          
-          if (tasksData.status === 'success') {
-            allTasks.push(...tasksData.tasks);
-          }
-        }
       }
 
-      // Fetch team members and calculate workload
+      // ✅ FETCH TEAM MEMBERS WITH SERVER-SIDE WORKLOAD CALCULATIONS
       const teamRes = await fetch('/api/team');
       const teamData = await teamRes.json();
 
       if (teamData.status === 'success') {
-        // Calculate workload for team members - SAME AS TEAM PAGE
-        const membersWithWorkload = await calculateTeamWorkload(teamData.teamMembers, allTasks);
-        setTeamMembers(membersWithWorkload);
+        setTeamMembers(teamData.teamMembers);
       }
 
-      // Calculate dashboard stats
-      if (projectsData.status === 'success' && teamData.status === 'success') {
-        const totalProjects = projectsData.projects.length;
-        const completedProjects = projectsData.projects.filter((project: BaseProject) => 
-          project.status === 'completed'
-        ).length;
-        
-        const totalTasks = projectsData.projects.reduce((sum: number, project: BaseProject) => 
-          sum + (project.taskStats?.total || 0), 0
-        );
-        
-        const totalTeamMembers = teamData.teamMembers.length;
+      // ✅ FETCH ACCURATE STATS USING THE NEW STATS API
+      const statsRes = await fetch('/api/projects/stats');
+      const statsData = await statsRes.json();
 
+      if (statsData.status === 'success') {
         setDashboardStats({
-          totalProjects,
-          completedProjects,
-          totalTasks,
-          totalTeamMembers
+          totalProjects: statsData.stats.totalProjects,
+          completedProjects: statsData.stats.completedProjects,
+          totalTasks: statsData.stats.totalTasks,
+          totalTeamMembers: teamData.teamMembers?.length || 0
+        });
+      } else {
+        // Fallback to calculated stats if stats API fails
+        setDashboardStats({
+          totalProjects: projectsData.pagination?.totalProjects || projectsData.projects.length,
+          completedProjects: projectsData.projects.filter((project: BaseProject) => 
+            project.status === 'completed'
+          ).length,
+          totalTasks: projectsData.projects.reduce((sum: number, project: BaseProject) => 
+            sum + (project.taskStats?.total || 0), 0
+          ),
+          totalTeamMembers: teamData.teamMembers?.length || 0
         });
       }
     } catch (error) {
@@ -181,7 +155,7 @@ export default function DashboardPageClient() {
     }
   };
 
-  // Get recent projects (3 most recent)
+  // Get recent projects (first 3 from the fetched page)
   const recentProjects = projects.slice(0, 3);
 
   // Get team members to display (3 members)
@@ -205,7 +179,7 @@ export default function DashboardPageClient() {
           </div>
         </div>
 
-        {/* Dashboard Stats using ProgressCard */}
+        {/* Dashboard Stats using ProgressCard - NOW USING ACCURATE STATS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {isLoading ? (
             <>
@@ -258,38 +232,32 @@ export default function DashboardPageClient() {
 
         {/* Recent Projects Section */}
         <div className="mb-8">
-
-
-
-
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-  <h2 className="text-2xl font-bold text-gray-800">Recent Projects</h2>
-  
-  <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-    {/* First row for mobile: View All button */}
-    <div className="flex justify-between items-center sm:justify-start">
-      <button
-        onClick={() => router.push('/projects')}
-        className="flex cursor-pointer items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium group"
-      >
-        View All
-        <FaArrowRight className="text-sm transform group-hover:translate-x-1 transition-transform" />
-      </button>
-    </div>
-    
-    {/* Second row for mobile: Add Project button */}
-    <div className="flex justify-end sm:justify-start">
-      <PrimaryButton
-        onClick={() => setShowAddModal(true)}
-        showIcon={true}
-        icon={FaPlus}
-        className="w-full sm:w-auto"
-      >
-        Add Project
-      </PrimaryButton>
-    </div>
-  </div>
-</div>
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+            <h2 className="text-2xl font-bold text-gray-800">Recent Projects</h2>
+            
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <div className="flex justify-between items-center sm:justify-start">
+                <button
+                  onClick={() => router.push('/projects')}
+                  className="flex cursor-pointer items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium group"
+                >
+                  View All
+                  <FaArrowRight className="text-sm transform group-hover:translate-x-1 transition-transform" />
+                </button>
+              </div>
+              
+              <div className="flex justify-end sm:justify-start">
+                <PrimaryButton
+                  onClick={() => setShowAddModal(true)}
+                  showIcon={true}
+                  icon={FaPlus}
+                  className="w-full sm:w-auto"
+                >
+                  Add Project
+                </PrimaryButton>
+              </div>
+            </div>
+          </div>
 
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
