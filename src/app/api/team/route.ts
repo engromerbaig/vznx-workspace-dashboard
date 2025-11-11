@@ -66,7 +66,6 @@ export async function GET() {
   }
 }
 
-
 export async function POST(request: Request) {
   try {
     const currentUser = await getCurrentUser();
@@ -78,10 +77,11 @@ export async function POST(request: Request) {
       );
     }
 
-    const { name, email, role }: { 
+    const { name, email, role, maxCapacity }: { 
       name: string; 
       email: string;
       role: string;
+      maxCapacity?: number;
     } = await request.json();
 
     if (!name || name.trim() === '') {
@@ -104,10 +104,29 @@ export async function POST(request: Request) {
       return NextResponse.json({ status: 'error', message: 'Team member with this email already exists' }, { status: 400 });
     }
 
+    // Get current global default from existing members
+    const existingMembers = await db.collection('teammembers').find({}).toArray();
+    let globalDefault = 8;
+    
+    if (existingMembers.length > 0) {
+      // Use the most common maxCapacity from existing members
+      const capacityCounts: { [key: number]: number } = {};
+      existingMembers.forEach(member => {
+        const cap = member.maxCapacity || 8;
+        capacityCounts[cap] = (capacityCounts[cap] || 0) + 1;
+      });
+      
+      // Find the most common capacity
+      globalDefault = parseInt(Object.keys(capacityCounts).reduce((a, b) => 
+        capacityCounts[parseInt(a)] > capacityCounts[parseInt(b)] ? a : b
+      ));
+    }
+
     const member = {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       role: role?.trim() || 'Team Member',
+      maxCapacity: maxCapacity || globalDefault, // Use provided or global default
       createdAt: now,
       updatedAt: now
     };
@@ -118,14 +137,19 @@ export async function POST(request: Request) {
 
     if (!newMember) throw new Error('Failed to create team member');
 
+    // Calculate capacity for the new member (0 tasks = 0% capacity)
+    const capacity = calculateCapacity(0, newMember.maxCapacity || globalDefault);
+
     const formattedMember = {
       _id: newMember._id.toString(),
       name: newMember.name,
       email: newMember.email,
       role: newMember.role,
+      maxCapacity: newMember.maxCapacity || globalDefault,
       createdAt: newMember.createdAt.toISOString(),
       updatedAt: newMember.updatedAt.toISOString(),
-      taskCount: 0 // New member has zero tasks
+      taskCount: 0, // New member has zero tasks
+      capacity: capacity // Include calculated capacity
     };
 
     return NextResponse.json({ status: 'success', teamMember: formattedMember }, { status: 201 });

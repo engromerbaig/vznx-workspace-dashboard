@@ -21,7 +21,6 @@ const teamMemberSchema = new Schema({
   },
   maxCapacity: {
     type: Number,
-    default: 8, // Default max capacity
     min: 1,
     max: 20
   }

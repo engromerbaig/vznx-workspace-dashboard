@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import PrimaryButton from '@/components/PrimaryButton';
 import InputField from '@/components/InputField';
@@ -23,6 +23,11 @@ export default function AddTeamMemberModal({
   const [role, setRole] = useState('');
   const [maxCapacity, setMaxCapacity] = useState(defaultMaxCapacity.toString());
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Update maxCapacity when defaultMaxCapacity changes
+  useEffect(() => {
+    setMaxCapacity(defaultMaxCapacity.toString());
+  }, [defaultMaxCapacity]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,7 +104,12 @@ export default function AddTeamMemberModal({
           max="20"
         />
 
-       
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
+          <div className="text-xs text-blue-800">
+            💡 <strong>Team Default:</strong> The current team capacity is set to {defaultMaxCapacity} tasks. 
+            You can override this for individual members if needed.
+          </div>
+        </div>
 
         <div className="flex gap-3 pt-4">
           <PrimaryButton

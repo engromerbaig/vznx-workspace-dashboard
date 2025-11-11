@@ -1,4 +1,5 @@
 // src/app/api/team/[id]/route.js
+// src/app/api/team/[id]/route.js
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { getCurrentUser } from '@/lib/server/auth-utils';
