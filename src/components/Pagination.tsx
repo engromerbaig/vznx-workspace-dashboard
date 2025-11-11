@@ -53,7 +53,7 @@ export default function Pagination({
   };
 
   return (
-    <div className={`flex border-t-2 border-border-color items-center justify-center space-x-1 ${className}`}>
+    <div className={`flex  items-center justify-center space-x-1 ${className}`}>
       {/* Previous Button - Caret Only */}
       <button
         onClick={handlePrev}
