@@ -2,11 +2,11 @@
 
 import { FaTrash, FaUser, FaEnvelope, FaBriefcase, FaTasks, FaExclamationTriangle, FaCheckCircle, FaArrowRight } from 'react-icons/fa';
 import { TeamMemberWithWorkload } from '@/types/team';
-import { getCapacityInfo, calculateCapacity, CAPACITY_THRESHOLDS } from '@/utils/capacity';
+import { getCapacityInfo, CAPACITY_THRESHOLDS } from '@/utils/capacity';
 import { formatDateTime } from '@/utils/dateFormatter';
 import { useState } from 'react';
 import { toast } from '@/components/ToastProvider';
-import { useRouter } from 'next/navigation'; // Add this import
+import { useRouter } from 'next/navigation';
 
 interface TeamMemberCardProps {
   member: TeamMemberWithWorkload;
@@ -17,7 +17,7 @@ export default function TeamMemberCard({
   member, 
   onDelete 
 }: TeamMemberCardProps) {
-  const router = useRouter(); // Add router
+  const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   
@@ -35,13 +35,14 @@ export default function TeamMemberCard({
     return <FaExclamationTriangle className="text-red-500" />;
   };
 
+  // Calculate available tasks based on member's maxCapacity
+  const availableTasks = Math.max(0, member.maxCapacity - member.taskCount);
+
   // Handle card click to navigate to team member details
   const handleCardClick = (e: React.MouseEvent) => {
-    // Prevent navigation if clicking on delete button or its children
     if ((e.target as HTMLElement).closest('button') || isDeleting) {
       return;
     }
-    // Navigate to team member details page using ID (you can use slug if you implement it)
     router.push(`/team/${member._id}`);
   };
 
@@ -53,9 +54,7 @@ export default function TeamMemberCard({
       `Are you sure you want to remove "${member.name}" from the team?`,
       async () => {
         try {
-          setIsDeleting(true); // Trigger fade-out animation
-          
-          // Wait for animation to complete before calling onDelete
+          setIsDeleting(true);
           await new Promise(resolve => setTimeout(resolve, 400));
           
           if (onDelete) {
@@ -63,7 +62,7 @@ export default function TeamMemberCard({
           }
           toast.success(`"${member.name}" removed from team successfully`);
         } catch (err) {
-          setIsDeleting(false); // Reset if error occurs
+          setIsDeleting(false);
           toast.error('Failed to remove team member. Please try again.');
         }
       }
@@ -79,7 +78,7 @@ export default function TeamMemberCard({
         }
         ${isHovered && !isDeleting ? 'ring-2 ring-blue-200 ring-opacity-50' : ''}
       `}
-      onClick={handleCardClick} // Add click handler
+      onClick={handleCardClick}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -173,7 +172,7 @@ export default function TeamMemberCard({
             </div>
             <div className="text-center animate-popIn" style={{ animationDelay: '0.2s' }}>
               <div className="text-2xl font-bold text-purple-600 flex items-center justify-center">
-                {Math.max(0, 8 - member.taskCount)}
+                {availableTasks}
               </div>
               <div className="text-xs text-purple-700 font-medium">Available</div>
             </div>
@@ -209,7 +208,7 @@ export default function TeamMemberCard({
               </div>
             </div>
 
-            {/* Task Load */}
+            {/* Task Load - UPDATED: Uses member.maxCapacity */}
             <div className="flex items-center gap-2 animate-fadeIn" style={{ animationDelay: '0.2s' }}>
               <div className="flex items-center justify-center w-5 h-5 bg-purple-100 rounded-full">
                 <FaTasks className="text-purple-500 text-xs" />
@@ -217,7 +216,7 @@ export default function TeamMemberCard({
               <div className="flex flex-col">
                 <span className="text-xs text-gray-400">Task Load</span>
                 <span className="text-xs font-medium text-purple-700">
-                  {member.taskCount}/8
+                  {member.taskCount}/{member.maxCapacity}
                 </span>
               </div>
             </div>

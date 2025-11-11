@@ -1,3 +1,4 @@
+// src/lib/models/TeamMember.ts
 import { Schema, models, model, InferSchemaType } from 'mongoose';
 
 const teamMemberSchema = new Schema({
@@ -17,6 +18,12 @@ const teamMemberSchema = new Schema({
     type: String, 
     required: true,
     trim: true 
+  },
+  maxCapacity: {
+    type: Number,
+    default: 8, // Default max capacity
+    min: 1,
+    max: 20
   }
 }, { 
   timestamps: true 
@@ -36,6 +43,8 @@ export type TeamMember = Omit<TeamMemberDocument, '_id' | 'createdAt' | 'updated
   _id: string;
   createdAt: string;
   updatedAt: string;
+  taskCount: number;
+  capacity: number; // This will be calculated on server
 };
 
 const TeamMember = models.TeamMember || model('TeamMember', teamMemberSchema);

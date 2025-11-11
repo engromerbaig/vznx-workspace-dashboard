@@ -8,7 +8,7 @@ import TaskItem from '@/components/TaskItem';
 import ProgressCard from '@/components/ProgressCard';
 import PrimaryButton from '@/components/PrimaryButton';
 import { FaArrowLeft, FaSync, FaTasks, FaCheck, FaClock, FaUser, FaEnvelope, FaBriefcase, FaExclamationTriangle } from 'react-icons/fa';
-import { getCapacityInfo, calculateCapacity, CAPACITY_THRESHOLDS } from '@/utils/capacity';
+import { getCapacityInfo, CAPACITY_THRESHOLDS } from '@/utils/capacity';
 import { formatDateTime, formatTime } from '@/utils/dateFormatter';
 import { toast } from '@/components/ToastProvider';
 
@@ -30,6 +30,7 @@ export default function TeamMemberDetailsPage() {
       setIsRefreshing(true);
       setError(null);
       
+      // Fetch team member with server-side calculated capacity
       const memberRes = await fetch(`/api/team/${memberSlug}?t=${Date.now()}`);
       if (!memberRes.ok) {
         if (memberRes.status === 404) {
@@ -43,6 +44,7 @@ export default function TeamMemberDetailsPage() {
       if (memberData.status === 'success') {
         setTeamMember(memberData.teamMember);
         
+        // Fetch assigned tasks
         const tasksRes = await fetch(`/api/tasks?assignedTo=${encodeURIComponent(memberData.teamMember.name)}&t=${Date.now()}`);
         if (!tasksRes.ok) {
           throw new Error('Failed to fetch assigned tasks');
@@ -100,8 +102,8 @@ export default function TeamMemberDetailsPage() {
       : 0
   };
 
-  // ✅ Correct capacity calculation using taskCount
-  const currentCapacity = teamMember ? calculateCapacity(teamMember.taskCount) : 0;
+  // ✅ Use server-calculated capacity from teamMember
+  const currentCapacity = teamMember?.capacity || 0;
   const capacityInfo = getCapacityInfo(currentCapacity);
 
   const getCapacityGradient = (capacity: number) => {
@@ -109,6 +111,9 @@ export default function TeamMemberDetailsPage() {
     if (capacity < CAPACITY_THRESHOLDS.MODERATE) return 'from-yellow-400 to-amber-500';
     return 'from-red-400 to-rose-500';
   };
+
+  // Calculate available tasks based on member's maxCapacity
+  const availableTasks = teamMember ? Math.max(0, teamMember.maxCapacity - teamMember.taskCount) : 0;
 
   if (isLoading) {
     return (
@@ -241,7 +246,10 @@ export default function TeamMemberDetailsPage() {
                   {capacityInfo.status} WORKLOAD
                 </span>
                 <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800">
-                  {teamMember.taskCount} TASKS
+                  {teamMember.taskCount}/{teamMember.maxCapacity} TASKS
+                </span>
+                <span className="px-3 py-1 rounded-full text-sm font-semibold bg-purple-100 text-purple-800">
+                  {availableTasks} AVAILABLE
                 </span>
               </div>
             </div>

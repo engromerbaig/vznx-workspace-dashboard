@@ -1,6 +1,8 @@
+// src/app/api/team/route.ts
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { getCurrentUser } from '@/lib/server/auth-utils';
+import { calculateCapacity, calculateTeamStats } from '@/lib/server/capacity-utils';
 
 export async function GET() {
   try {
@@ -17,28 +19,43 @@ export async function GET() {
       },
       {
         $addFields: {
-          taskCount: { $size: '$tasks' }
+          taskCount: { $size: '$tasks' },
+          maxCapacity: { $ifNull: ['$maxCapacity', 8] } // Default to 8 if not present
         }
       },
       {
         $project: {
-          tasks: 0 // remove tasks array, we only need count
+          tasks: 0
         }
       },
       { $sort: { createdAt: -1 } }
     ]).toArray();
 
-    const formattedMembers = membersWithTaskCount.map(member => ({
-      _id: member._id.toString(),
-      name: member.name,
-      email: member.email,
-      role: member.role,
-      createdAt: member.createdAt.toISOString(),
-      updatedAt: member.updatedAt.toISOString(),
-      taskCount: member.taskCount
-    }));
+    // Calculate capacity for each member on server side
+    const formattedMembers = membersWithTaskCount.map(member => {
+      const capacity = calculateCapacity(member.taskCount, member.maxCapacity);
+      
+      return {
+        _id: member._id.toString(),
+        name: member.name,
+        email: member.email,
+        role: member.role,
+        maxCapacity: member.maxCapacity,
+        createdAt: member.createdAt.toISOString(),
+        updatedAt: member.updatedAt.toISOString(),
+        taskCount: member.taskCount,
+        capacity // Server-calculated capacity
+      };
+    });
 
-    return NextResponse.json({ status: 'success', teamMembers: formattedMembers });
+    // Calculate team stats
+    const teamStats = calculateTeamStats(formattedMembers);
+
+    return NextResponse.json({ 
+      status: 'success', 
+      teamMembers: formattedMembers,
+      teamStats 
+    });
 
   } catch (error) {
     console.error('Failed to fetch team members:', error);

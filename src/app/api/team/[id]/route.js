@@ -3,10 +3,11 @@ import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { getCurrentUser } from '@/lib/server/auth-utils';
 import { ObjectId } from 'mongodb';
+import { calculateCapacity } from '@/lib/server/capacity-utils';
 
 export async function GET(request, context) {
   try {
-    const params = await context.params; // <-- await context.params directly
+    const params = await context.params;
     const { id } = params;
 
     const db = await getDatabase();
@@ -20,14 +21,22 @@ export async function GET(request, context) {
     // Count tasks assigned
     const taskCount = await db.collection('tasks').countDocuments({ assignedTo: teamMember.name });
 
+    // Get maxCapacity from team member (with default fallback)
+    const maxCapacity = teamMember.maxCapacity || 8;
+
+    // Calculate capacity on server side
+    const capacity = calculateCapacity(taskCount, maxCapacity);
+
     const formattedMember = {
       _id: teamMember._id.toString(),
       name: teamMember.name,
       email: teamMember.email,
       role: teamMember.role,
+      maxCapacity: maxCapacity,
       createdAt: teamMember.createdAt.toISOString(),
       updatedAt: teamMember.updatedAt.toISOString(),
-      taskCount
+      taskCount: taskCount,
+      capacity: capacity // Server-calculated capacity
     };
 
     return NextResponse.json({ status: 'success', teamMember: formattedMember });
@@ -42,7 +51,7 @@ export async function GET(request, context) {
 
 export async function DELETE(request, context) {
   try {
-    const params = await context.params; // <-- await context.params directly
+    const params = await context.params;
     const currentUser = await getCurrentUser();
     if (!currentUser) {
       return NextResponse.json({ status: 'error', message: 'Unauthorized' }, { status: 401 });

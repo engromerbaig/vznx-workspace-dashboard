@@ -1,3 +1,4 @@
+// src/types/team.ts
 import { TeamMemberDocument } from '@/lib/models/TeamMember';
 
 export interface TeamMemberWithWorkload extends Omit<TeamMemberDocument, '_id' | 'createdAt' | 'updatedAt'> {
@@ -6,6 +7,7 @@ export interface TeamMemberWithWorkload extends Omit<TeamMemberDocument, '_id' |
   updatedAt: string;
   taskCount: number;
   capacity: number;
+  maxCapacity: number; // Add this
 }
 
 export interface TeamWorkloadStats {
@@ -14,4 +16,5 @@ export interface TeamWorkloadStats {
   comfortableLoad: number;
   heavyLoad: number;
   averageCapacity: number;
+  totalMaxCapacity: number;
 }

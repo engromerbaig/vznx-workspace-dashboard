@@ -8,17 +8,20 @@ import InputField from '@/components/InputField';
 interface AddTeamMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (memberData: { name: string; email: string; role: string }) => void;
+  onSubmit: (memberData: { name: string; email: string; role: string; maxCapacity?: number }) => void;
+  defaultMaxCapacity?: number;
 }
 
 export default function AddTeamMemberModal({
   isOpen,
   onClose,
   onSubmit,
+  defaultMaxCapacity = 8,
 }: AddTeamMemberModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('');
+  const [maxCapacity, setMaxCapacity] = useState(defaultMaxCapacity.toString());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -31,10 +34,12 @@ export default function AddTeamMemberModal({
         name: name.trim(),
         email: email.trim(),
         role: role.trim() || 'Team Member',
+        maxCapacity: parseInt(maxCapacity) || defaultMaxCapacity,
       });
       setName('');
       setEmail('');
       setRole('');
+      setMaxCapacity(defaultMaxCapacity.toString());
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -45,6 +50,7 @@ export default function AddTeamMemberModal({
     setName('');
     setEmail('');
     setRole('');
+    setMaxCapacity(defaultMaxCapacity.toString());
     onClose();
   };
 
@@ -81,6 +87,24 @@ export default function AddTeamMemberModal({
           placeholder="e.g., Project Manager, Developer, Designer"
           disabled={isSubmitting}
         />
+
+        <InputField
+          label="Max Capacity (Tasks)"
+          type="number"
+          value={maxCapacity}
+          onChange={(e) => setMaxCapacity(e.target.value)}
+          placeholder="Enter maximum task capacity"
+          disabled={isSubmitting}
+          min="1"
+          max="20"
+        />
+
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
+          <div className="text-xs text-blue-800">
+            💡 <strong>Capacity Note:</strong> This sets the maximum number of tasks this member can handle. 
+            The team default is {defaultMaxCapacity} tasks.
+          </div>
+        </div>
 
         <div className="flex gap-3 pt-4">
           <PrimaryButton
