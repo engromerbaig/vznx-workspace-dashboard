@@ -15,6 +15,7 @@ const config: Config = {
         foreground: "#000000",
         "primary": "#2B35A0",
         "secondary": "#B6B7BB",
+        "tertiary": "#A855F7",
         "scons": "#00C5FF",
         "borderColor": "ffff00 ",
         // Additional colors
