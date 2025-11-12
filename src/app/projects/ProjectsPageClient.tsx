@@ -14,6 +14,9 @@ import { usePagination } from '@/hooks/usePagination';
 import { FaPlus, FaProjectDiagram, FaCheckCircle, FaClock, FaTasks } from 'react-icons/fa';
 import { toast } from '@/components/ToastProvider';
 import { ProjectsEmptyState } from '@/components/empty-states/ProjectsEmptyState';
+import Header from '@/components/Header';
+import { MdAssignment } from 'react-icons/md';
+
 
 export default function ProjectsPageClient() {
   const { user } = useUser();
@@ -195,15 +198,17 @@ export default function ProjectsPageClient() {
   return (
     <>
 
+    <Header
+    text = "Projects Overview"
+    icon = {<MdAssignment  />}
+    />
+
         
-        {/* Projects Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">
-              Projects
-            </h2>
+         
             {totalProjectsCount > 0 && (
-              <p className="text-gray-600 text-sm mt-1">
+              <p className="text-gray-700 font-medium border rounded-full px-2 py-1 text-xs mt-1">
                 Showing {((pagination.currentPage - 1) * 6) + 1}-{Math.min(pagination.currentPage * 6, totalProjectsCount)} of {totalProjectsCount} projects
               </p>
             )}

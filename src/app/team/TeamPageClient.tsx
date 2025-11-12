@@ -14,6 +14,8 @@ import { usePagination } from '@/hooks/usePagination';
 import { FaPlus, FaUsers, FaTasks, FaCheckCircle, FaExclamationTriangle, FaCog } from 'react-icons/fa';
 import { toast } from '@/components/ToastProvider';
 import { TeamEmptyState } from '@/components/empty-states/TeamEmptyState';
+import Header from '@/components/Header';
+import { IoPeople } from 'react-icons/io5';
 
 export default function TeamPageClient() {
   const [teamMembers, setTeamMembers] = useState<TeamMemberWithWorkload[]>([]);
@@ -224,10 +226,14 @@ export default function TeamPageClient() {
   return (
        <>
 
+       <Header
+       text= "Teams Overview"
+        icon = {<IoPeople  />}
+       />
+
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-800">Team Overview</h1>
+          <div className="flex-1 ">
         <p className="text-gray-600 mt-2">
   {teamStats.totalMaxCapacity} total capacity available
   {totalTeamMembersCount > 0 && (
