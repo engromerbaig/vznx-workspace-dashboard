@@ -16,6 +16,9 @@ import { FaPlus, FaProjectDiagram, FaTasks, FaUsers, FaCheckCircle, FaArrowRight
 import { toast } from '@/components/ToastProvider';
 import { ProjectsEmptyState } from '@/components/empty-states/ProjectsEmptyState';
 import { TeamEmptyState } from '@/components/empty-states/TeamEmptyState';
+import Header from '@/components/Header';
+import { MdOutlineSpaceDashboard } from "react-icons/md";
+
 
 interface DashboardStats {
   totalProjects: number;
@@ -168,11 +171,12 @@ export default function DashboardPageClient() {
     <>
         
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800">{process.env.NEXT_PUBLIC_APP_NAME}</h1>
-          <p className="text-gray-600 mt-2">Dashboard Overview</p>
-        </div>
+   <Header 
+  title="VZNX Workspace Dashboard"
+  text="Dashboard Overview"
+  icon={<MdOutlineSpaceDashboard  />}
 
+/>
         {/* Welcome Message */}
         <div className="bg-white p-6 rounded-lg shadow-md mb-8">
           <h2 className="text-xl font-bold mb-2 text-black">Welcome back, {user?.username}!</h2>

@@ -11,6 +11,14 @@ interface HeadingProps {
   titleLineHeight?: string;
   titleAlign?: string;
 
+  // Optional text prop
+  text?: string;
+  textColor?: string;
+  textSize?: string;
+  textWeight?: string;
+  textMargin?: string;
+  textAlign?: string;
+
   className?: string;
 }
 
@@ -25,6 +33,14 @@ const Heading = ({
   titleLineHeight = '1.0',
   titleAlign = 'text-center',
 
+  // Optional text props
+  text,
+  textColor = 'text-gray-300',
+  textSize = 'text-lg',
+  textWeight = 'font-normal',
+  textMargin = 'mb-0',
+  textAlign = 'text-center',
+
   className = '',
 }: HeadingProps) => {
   return (
@@ -36,6 +52,11 @@ const Heading = ({
         >
           {title}
         </h1>
+      )}
+      {text && (
+        <p className={`${textSize} ${textWeight} ${textAlign} ${textColor} ${textMargin}`}>
+          {text}
+        </p>
       )}
     </div>
   );
