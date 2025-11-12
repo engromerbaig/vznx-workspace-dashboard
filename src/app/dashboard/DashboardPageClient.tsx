@@ -172,7 +172,6 @@ export default function DashboardPageClient() {
         
         {/* Header */}
    <Header 
-  title="VZNX Workspace Dashboard"
   text="Dashboard Overview"
   icon={<MdOutlineSpaceDashboard  />}
 

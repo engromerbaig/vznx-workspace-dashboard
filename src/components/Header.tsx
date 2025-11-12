@@ -2,13 +2,13 @@
 
 import { ReactNode } from 'react';
 import Heading from './Heading';
-import {theme} from '@/theme';
+import { PiCaretRight } from "react-icons/pi";
+import { theme } from '@/theme';
 
 interface HeaderProps {
-  title: string;
+  title?: string; // Made optional with default
   text?: string;
   icon?: ReactNode;
-  iconPosition?: 'left' | 'right';
   bgColor?: string;
   rounded?: string;
   className?: string;
@@ -29,12 +29,11 @@ interface HeaderProps {
 }
 
 const Header = ({
-  title,
+  title = "VZNX Workspace Dashboard", // Default title
   text,
   icon,
-  iconPosition = 'right',
   bgColor = `${theme.gradients.hero}`,
-  rounded = 'rounded-xl',
+  rounded = 'rounded-3xl',
   className = '',
   
   // Heading props with defaults suitable for header
@@ -51,40 +50,47 @@ const Header = ({
   textMargin = 'mb-0',
   textAlign = 'text-left',
 }: HeaderProps) => {
+  
+  // Add caret before text if text exists
+  const formattedText = text ? (
+    <span className="flex items-center gap-2">
+      <PiCaretRight className="text-lg" />
+      {text}
+    </span>
+  ) : undefined;
+
   return (
     <div className={`
       relative 
       ${bgColor} 
       ${rounded} 
-      p-8 
-      shadow-lg 
-      mb-6  /* Added bottom margin */
+      px-8 
+      py-12 
+      shadow-xl 
+      mb-6
       ${className}
     `}>
-      {/* Absolute positioned icon */}
+      {/* Absolute positioned icon - always on right */}
       {icon && (
-        <div className={`
+        <div className="
           absolute 
           top-1/2 
+          right-8
           transform 
           -translate-y-1/2 
-          ${iconPosition === 'right' ? 'right-8' : 'left-8'} /* Adjusted for increased padding */
           text-white 
           text-7xl 
           opacity-20 
           hover:opacity-50
           transition-opacity
           duration-200
-        `}>
+        ">
           {icon}
         </div>
       )}
       
       {/* Content with padding adjustment for icon */}
-      <div className={`
-        ${icon && iconPosition === 'right' ? 'pr-16' : ''} 
-        ${icon && iconPosition === 'left' ? 'pl-16' : ''}  
-      `}>
+      <div className={icon ? 'pr-16' : ''}>
         <Heading
           title={title}
           titleColor={titleColor}
@@ -93,7 +99,7 @@ const Header = ({
           titleMargin={titleMargin}
           titleLineHeight={titleLineHeight}
           titleAlign={titleAlign}
-          text={text}
+          text={formattedText} // Use formatted text with caret
           textColor={textColor}
           textSize={textSize}
           textWeight={textWeight}

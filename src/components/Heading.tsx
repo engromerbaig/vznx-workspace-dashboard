@@ -1,5 +1,7 @@
 'use client';
 
+import { ReactNode } from 'react';
+
 interface HeadingProps {
   title: string;
   titleColor?: string;
@@ -11,8 +13,8 @@ interface HeadingProps {
   titleLineHeight?: string;
   titleAlign?: string;
 
-  // Optional text prop
-  text?: string;
+  // Optional text prop - changed to ReactNode
+  text?: ReactNode; // Changed from string to ReactNode
   textColor?: string;
   textSize?: string;
   textWeight?: string;
