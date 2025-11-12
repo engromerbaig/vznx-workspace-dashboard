@@ -9,6 +9,7 @@ import { CiLogout } from 'react-icons/ci';
 import { useUser } from '@/context/UserContext';
 import { useLogout } from '@/context/LogoutContext';
 import { navItems } from '@/data/navItems';
+import { theme } from '@/theme';
 
 interface OffCanvasMenuProps {
   isOpen: boolean;
@@ -42,7 +43,7 @@ export default function OffCanvasMenu({ isOpen, onClose, isLoggingOut }: OffCanv
 
       {/* Menu Panel */}
       <div
-        className={`fixed top-0 left-0 h-full w-80 bg-gradient-to-b from-gray-900 to-gray-800 shadow-2xl z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
+        className={`fixed top-0 left-0 h-full w-80 ${theme.gradients.hero} shadow-2xl z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         } ${isLoggingOut ? 'pointer-events-none opacity-70' : ''}`}
       >

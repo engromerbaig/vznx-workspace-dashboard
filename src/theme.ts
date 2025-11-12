@@ -16,11 +16,8 @@ interface Colors {
 
 interface SectionPaddings {
   horizontalPx: string;
-  horizontalMx: string;
   verticalPy: string;
-  verticalPyHero: string;
-  verticalPyHeavy: string;
-  verticalMy: string;
+ 
 }
 
 interface Gradients {
@@ -79,12 +76,9 @@ export const theme: Theme = {
   },
 
   sectionPaddings: {
-    horizontalPx: "px-2 lg:px-10 ",
-    horizontalMx: "mx-4 lg:mx-20 ",
+    horizontalPx: "px-4 lg:px-10 ",
     verticalPy: "py-8 lg:py-10",  
-    verticalPyHero: "py-12 lg:py-16",
-    verticalPyHeavy: "pt-12 lg:pt-40",  
-    verticalMy: "my-6 lg:my-8",
+    
   },
 
   gradients: {
