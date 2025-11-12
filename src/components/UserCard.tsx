@@ -1,11 +1,14 @@
 'use client';
 
 import { FaCircle, FaUser, FaEnvelope, FaUserTag } from 'react-icons/fa';
+import { RiAdminLine } from "react-icons/ri";
+
 
 interface UserCardProps {
   user: {
     username?: string;
     name?: string;
+    role?: string;
     email?: string;
     isActive?: boolean;
   };
@@ -79,6 +82,14 @@ const UserCard = ({
               <span className="flex items-center gap-2 bg-gray-800/50 px-3 py-2 rounded-lg text-sm font-medium">
                 <FaEnvelope className="text-green-400 text-sm" />
                 {user.email}
+              </span>
+            )}
+
+
+                 {user?.role && (
+              <span className="flex items-center gap-2 bg-gray-800/50 px-3 py-2 rounded-lg text-sm font-medium">
+                <RiAdminLine className="text-purple-400 text-sm" />
+                {user.role}
               </span>
             )}
           </div>

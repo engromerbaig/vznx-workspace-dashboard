@@ -36,7 +36,7 @@ export default function Navbar() {
       </button>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:flex fixed top-0 left-0 h-full w-64 bg-gradient-to-b from-gray-900 to-gray-800 shadow-xl z-40 p-6 flex-col gap-6">
+      <div className={`hidden md:flex fixed top-0 left-0 h-full w-64 ${theme.gradients.hero} shadow-xl z-40 p-6 flex-col gap-6`}>
         {/* Logo */}
         <div className="flex justify-center mb-4 pb-4 border-b border-gray-700">
           <a href="/dashboard">
@@ -93,7 +93,7 @@ export default function Navbar() {
                 className={`w-full flex items-center cursor-pointer justify-center gap-2 px-4 py-2 rounded-lg transition-all duration-200 ${
                   isLoggingOut
                     ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                    : 'bg-red-600/20 text-red-400 hover:bg-red-600/30 hover:text-red-300 border border-red-600/30'
+                    : 'bg-red-600/10 text-red-400 hover:bg-red-600/30 hover:text-red-300 border border-red-600/30'
                 }`}
               >
                 {isLoggingOut ? (
