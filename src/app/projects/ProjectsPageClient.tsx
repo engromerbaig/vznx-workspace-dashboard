@@ -44,6 +44,8 @@ export default function ProjectsPageClient() {
     }
   });
 
+  const [isFilterChange, setIsFilterChange] = useState(false);
+
   const pagination = usePagination({
     totalItems: totalProjectsCount,
     pageSize: 6,
@@ -118,14 +120,21 @@ export default function ProjectsPageClient() {
   // Handle filter changes
   const handleFilterChange = (newFilters: FilterOptions) => {
     setFilters(newFilters);
-    // Reset to page 1 when filters change
-    pagination.goToPage(1);
+    setIsFilterChange(true);
   };
 
-  // Fetch projects when page or filters change
+  // Reset to page 1 when filters change, then fetch
+  useEffect(() => {
+    if (isFilterChange) {
+      pagination.goToPage(1);
+      setIsFilterChange(false);
+    }
+  }, [filters]);
+
+  // Fetch projects when page changes
   useEffect(() => {
     fetchProjects(pagination.currentPage);
-  }, [pagination.currentPage, filters]);
+  }, [pagination.currentPage]);
 
   // Add new project
   const handleAddProject = async (projectData: { name: string; description?: string }) => {
