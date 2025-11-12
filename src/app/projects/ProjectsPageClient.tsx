@@ -9,10 +9,12 @@ import ProgressCard from '@/components/ProgressCard';
 import AddProjectModal from '@/components/AddProjectModal';
 import PrimaryButton from '@/components/PrimaryButton';
 import Pagination from '@/components/Pagination';
+import FilterBar, { FilterOptions } from '@/components/FilterBar';
 import { usePagination } from '@/hooks/usePagination';
 import { FaPlus, FaProjectDiagram, FaCheckCircle, FaClock, FaTasks } from 'react-icons/fa';
 import { toast } from '@/components/ToastProvider';
 import { ProjectsEmptyState } from '@/components/empty-states/ProjectsEmptyState';
+
 export default function ProjectsPageClient() {
   const { user } = useUser();
   const [projects, setProjects] = useState<BaseProject[]>([]);
@@ -30,72 +32,100 @@ export default function ProjectsPageClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
   const [totalProjectsCount, setTotalProjectsCount] = useState(0);
+  
+  // Filter state
+  const [filters, setFilters] = useState<FilterOptions>({
+    search: '',
+    sortBy: 'recent',
+    status: 'all',
+    dateRange: {
+      start: '',
+      end: ''
+    }
+  });
 
   const pagination = usePagination({
-    totalItems: totalProjectsCount, // Use server-side total count
+    totalItems: totalProjectsCount,
     pageSize: 6,
     initialPage: 1,
     maxVisiblePages: 5
   });
 
-  // Fetch projects with pagination
+  // Build query params from filters
+  const buildQueryParams = (page: number = 1) => {
+    const params = new URLSearchParams();
+    params.append('page', page.toString());
+    params.append('limit', '6');
+    
+    if (filters.search) params.append('search', filters.search);
+    if (filters.sortBy) params.append('sortBy', filters.sortBy);
+    if (filters.status !== 'all') params.append('status', filters.status);
+    if (filters.dateRange.start) params.append('startDate', filters.dateRange.start);
+    if (filters.dateRange.end) params.append('endDate', filters.dateRange.end);
+    
+    return params.toString();
+  };
+
+  // Fetch projects with pagination and filters
   const fetchProjects = async (page: number = 1) => {
     try {
       setIsLoading(true);
-      const res = await fetch(`/api/projects?page=${page}&limit=6`);
+      const queryParams = buildQueryParams(page);
+      const res = await fetch(`/api/projects?${queryParams}`);
       const data = await res.json();
       
       if (data.status === 'success') {
         setProjects(data.projects);
         setTotalProjectsCount(data.pagination.totalProjects);
         
-        // If we're on the first page, also fetch stats for all projects
-        if (page === 1) {
-          await fetchAllProjectsStats();
-        }
+        // Also fetch stats with same filters
+        await fetchAllProjectsStats();
       }
     } catch (error) {
       console.error('Failed to fetch projects:', error);
+      toast.error('Failed to load projects');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Fetch stats for all projects (separate call for accurate stats)
+  // Fetch stats for filtered projects
   const fetchAllProjectsStats = async () => {
     try {
-      const res = await fetch('/api/projects/stats'); // We'll create this endpoint
+      const params = new URLSearchParams();
+      
+      // Add all active filters to stats query
+      if (filters.search) params.append('search', filters.search);
+      if (filters.status !== 'all') params.append('status', filters.status);
+      if (filters.dateRange.start) params.append('startDate', filters.dateRange.start);
+      if (filters.dateRange.end) params.append('endDate', filters.dateRange.end);
+      
+      console.log('🔍 Fetching stats with params:', params.toString());
+      
+      const res = await fetch(`/api/projects/stats?${params.toString()}`);
       const data = await res.json();
+      
+      console.log('📊 Stats response:', data);
       
       if (data.status === 'success') {
         setAllProjectsStats(data.stats);
       }
     } catch (error) {
       console.error('Failed to fetch project stats:', error);
-      // Fallback: calculate from current page if stats endpoint fails
-      calculateStatsFromCurrent();
     }
   };
 
-  // Fallback: calculate stats from current page data (less accurate)
-  const calculateStatsFromCurrent = () => {
-    // This is a fallback - not as accurate but better than nothing
-    const completed = projects.filter(p => p.status === 'completed').length;
-    const incomplete = projects.filter(p => p.status !== 'completed').length;
-    const totalTasks = projects.reduce((sum, project) => sum + (project.taskStats?.total || 0), 0);
-    
-    setAllProjectsStats({
-      totalProjects: totalProjectsCount,
-      completedProjects: completed,
-      incompleteProjects: incomplete,
-      totalTasks: totalTasks
-    });
+  // Handle filter changes
+  const handleFilterChange = (newFilters: FilterOptions) => {
+    setFilters(newFilters);
+    // Reset to page 1 when filters change
+    pagination.goToPage(1);
   };
 
-  // Fetch projects when page changes
+  // Fetch projects when page or filters change
   useEffect(() => {
     fetchProjects(pagination.currentPage);
-  }, [pagination.currentPage]);
+  }, [pagination.currentPage, filters]);
 
   // Add new project
   const handleAddProject = async (projectData: { name: string; description?: string }) => {
@@ -111,7 +141,6 @@ export default function ProjectsPageClient() {
       if (data.status === 'success') {
         // Refresh the current page and stats
         await fetchProjects(pagination.currentPage);
-        await fetchAllProjectsStats();
         setShowAddModal(false);
         toast.success(`Project "${data.project.name}" added successfully!`);
       }
@@ -133,7 +162,6 @@ export default function ProjectsPageClient() {
       if (data.status === 'success') {
         // Refresh current page and stats after deletion
         await fetchProjects(pagination.currentPage);
-        await fetchAllProjectsStats();
         toast.success('Project deleted successfully');
       }
     } catch (error) {
@@ -146,7 +174,7 @@ export default function ProjectsPageClient() {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
         
-        {/* Projects Header with count */}
+        {/* Projects Header */}
         <div className="flex justify-between items-center mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">
@@ -204,37 +232,27 @@ export default function ProjectsPageClient() {
           </div>
         )}
 
+        {/* Filter Bar */}
+        <FilterBar
+          onFilterChange={handleFilterChange}
+          showStatusFilter={true}
+          placeholder="Search projects by name or description..."
+        />
+
         {/* Projects Grid */}
         {isLoading ? (
-          <>
-            {/* Loading state for progress cards */}
-            {totalProjectsCount > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="bg-white rounded-xl p-5 border border-gray-200 animate-pulse min-h-[120px]">
-                    <div className="h-8 bg-gray-200 rounded w-3/4 mb-3"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-                  </div>
-                ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                <div className="h-3 bg-gray-200 rounded w-1/2 mb-6"></div>
+                <div className="h-2 bg-gray-200 rounded w-full mb-2"></div>
+                <div className="h-2 bg-gray-200 rounded w-5/6"></div>
               </div>
-            )}
-            
-            {/* Loading state for project cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3, 4, 5, 6].map(i => (
-                <div key={i} className="bg-white rounded-lg shadow-md p-6 animate-pulse">
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2 mb-6"></div>
-                  <div className="h-2 bg-gray-200 rounded w-full mb-2"></div>
-                  <div className="h-2 bg-gray-200 rounded w-5/6"></div>
-                </div>
-              ))}
-            </div>
-          </>
+            ))}
+          </div>
         ) : totalProjectsCount === 0 ? (
-          // ✅ Centered No Projects UI
-               <ProjectsEmptyState onAddProject={() => setShowAddModal(true)} />
-
+          <ProjectsEmptyState onAddProject={() => setShowAddModal(true)} />
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
@@ -248,26 +266,25 @@ export default function ProjectsPageClient() {
             </div>
 
             {/* Pagination */}
-            <Pagination
-              currentPage={pagination.currentPage}
-              totalPages={pagination.totalPages}
-              visiblePages={pagination.visiblePages}
-              onPageChange={(page) => {
-                pagination.goToPage(page);
-                // The useEffect will handle the fetch
-              }}
-              onPrev={() => {
-                pagination.prevPage();
-                // The useEffect will handle the fetch
-              }}
-              onNext={() => {
-                pagination.nextPage();
-                // The useEffect will handle the fetch
-              }}
-              canPrev={pagination.canPrevPage}
-              canNext={pagination.canNextPage}
-              className="mt-8"
-            />
+            {pagination.totalPages > 1 && (
+              <Pagination
+                currentPage={pagination.currentPage}
+                totalPages={pagination.totalPages}
+                visiblePages={pagination.visiblePages}
+                onPageChange={(page) => {
+                  pagination.goToPage(page);
+                }}
+                onPrev={() => {
+                  pagination.prevPage();
+                }}
+                onNext={() => {
+                  pagination.nextPage();
+                }}
+                canPrev={pagination.canPrevPage}
+                canNext={pagination.canNextPage}
+                className="mt-8"
+              />
+            )}
           </>
         )}
 
