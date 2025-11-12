@@ -3,7 +3,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { FaSearch, FaTimes, FaCalendar, FaRedo, FaSortAmountDown, FaSortAlphaDown } from 'react-icons/fa';
-import { MdSpeed } from 'react-icons/md';
+import { MdSpeed, MdOutlineFilterAlt, MdOutlineFilterAltOff } from 'react-icons/md';
+import { formatDate } from '@/utils/dateFormatter';
 
 export interface FilterOptions {
   search: string;
@@ -47,16 +48,18 @@ const CustomDropdown = ({ label, value, options, onChange, icon }: DropdownProps
   const selectedOption = options.find(opt => opt.value === value);
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative w-full lg:w-auto" ref={dropdownRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/20 transition-all duration-200 text-white text-sm whitespace-nowrap"
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/20 transition-all duration-200 text-white text-sm"
       >
-        {icon && <span className="text-white/80">{icon}</span>}
-        <span className="font-medium">{selectedOption?.label || label}</span>
+        <div className="flex items-center gap-2">
+          {icon && <span className="text-white/80">{icon}</span>}
+          <span className="font-medium whitespace-nowrap">{selectedOption?.label || label}</span>
+        </div>
         <svg 
-          className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+          className={`w-4 h-4 transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} 
           fill="none" 
           stroke="currentColor" 
           viewBox="0 0 24 24"
@@ -66,7 +69,7 @@ const CustomDropdown = ({ label, value, options, onChange, icon }: DropdownProps
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-[#2B35A0]/20 overflow-hidden z-50 min-w-[200px]">
+        <div className="absolute top-full left-0 mt-2 w-full lg:min-w-[200px] bg-white rounded-lg shadow-xl border border-[#2B35A0]/20 overflow-hidden z-50">
           {options.map((option) => (
             <button
               key={option.value}
@@ -107,6 +110,7 @@ export default function FilterBar({
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     const isActive = 
@@ -180,16 +184,123 @@ export default function FilterBar({
     return 'progress';
   };
 
-  const getSortValue = () => {
-    const sortType = getSortType();
-    if (sortType === 'date') return filters.sortBy;
-    if (sortType === 'name') return filters.sortBy;
-    return filters.sortBy;
+  const formatDisplayDate = (dateStr: string) => {
+    if (!dateStr) return '...';
+    try {
+      return formatDate(new Date(dateStr));
+    } catch {
+      return dateStr;
+    }
   };
 
   return (
     <div className={`bg-gradient-to-br from-[#2B35A0] via-[#3642b8] to-[#2B35A0] rounded-xl shadow-lg border border-[#2B35A0]/30 p-4 mb-6 ${className}`}>
-      <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
+      
+      {/* Mobile: Search + Filter Toggle */}
+      <div className="lg:hidden">
+        <div className="flex items-center gap-3 mb-3">
+          {/* Search Input */}
+          <div className="flex-1 relative">
+            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50 text-sm" />
+            <input
+              type="text"
+              value={filters.search}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder={placeholder}
+              className="w-full pl-10 pr-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/40 outline-none transition-all duration-200 text-white placeholder-white/60 text-sm"
+            />
+          </div>
+
+          {/* Filter Toggle Button */}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center gap-2 px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/20 transition-all duration-200 text-white text-sm whitespace-nowrap"
+          >
+            {showFilters ? (
+              <>
+                <MdOutlineFilterAltOff className="text-lg" />
+                <span>Hide</span>
+              </>
+            ) : (
+              <>
+                <MdOutlineFilterAlt className="text-lg" />
+                <span>Filters</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* Mobile: Collapsible Filters */}
+        {showFilters && (
+          <div className="flex flex-col gap-3">
+            {/* Sort by Date */}
+            <CustomDropdown
+              label="Date"
+              value={getSortType() === 'date' ? filters.sortBy : 'recent'}
+              options={sortOptions}
+              onChange={(value) => handleSortChange(value as FilterOptions['sortBy'])}
+              icon={<FaSortAmountDown />}
+            />
+
+            {/* Sort by Name */}
+            <CustomDropdown
+              label="Name"
+              value={getSortType() === 'name' ? filters.sortBy : 'name-asc'}
+              options={nameOptions}
+              onChange={(value) => handleSortChange(value as FilterOptions['sortBy'])}
+              icon={<FaSortAlphaDown />}
+            />
+
+            {/* Sort by Progress */}
+            <CustomDropdown
+              label="Progress"
+              value={getSortType() === 'progress' ? filters.sortBy : 'progress-desc'}
+              options={progressOptions}
+              onChange={(value) => handleSortChange(value as FilterOptions['sortBy'])}
+              icon={<MdSpeed />}
+            />
+
+            {/* Status Filter */}
+            {showStatusFilter && (
+              <CustomDropdown
+                label="Status"
+                value={filters.status}
+                options={statusOptions}
+                onChange={(value) => handleStatusChange(value as FilterOptions['status'])}
+              />
+            )}
+
+            {/* Date Range Toggle */}
+            <button
+              onClick={() => setShowDatePicker(!showDatePicker)}
+              className={`flex items-center justify-between gap-2 px-3 py-2 border rounded-lg transition-all duration-200 text-sm ${
+                filters.dateRange.start || filters.dateRange.end
+                  ? 'bg-white text-[#2B35A0] border-white'
+                  : 'bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <FaCalendar className="text-sm" />
+                <span>Date Range</span>
+              </div>
+            </button>
+
+            {/* Reset Button */}
+            {hasActiveFilters && (
+              <button
+                onClick={handleReset}
+                className="flex items-center justify-center gap-2 px-3 py-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border border-white/20 rounded-lg transition-all duration-200 text-sm"
+              >
+                <FaRedo className="text-sm" />
+                <span>Reset All Filters</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop: All Filters in Row */}
+      <div className="hidden lg:flex items-stretch gap-3">
         
         {/* Search Input */}
         <div className="flex-1 relative">
@@ -330,7 +441,7 @@ export default function FilterBar({
           )}
           {(filters.dateRange.start || filters.dateRange.end) && (
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs rounded-full border border-white/30">
-              {filters.dateRange.start || '...'} to {filters.dateRange.end || '...'}
+              {formatDisplayDate(filters.dateRange.start)} to {formatDisplayDate(filters.dateRange.end)}
               <button
                 onClick={() => handleDateRangeChange('', '')}
                 className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
