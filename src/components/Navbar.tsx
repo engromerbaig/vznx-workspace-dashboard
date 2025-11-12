@@ -11,6 +11,7 @@ import { useLogout } from '@/context/LogoutContext';
 import { navItems } from '@/data/navItems';
 import OffCanvasMenu from './OffCanvasMenu';
 import { CiLogout } from 'react-icons/ci';
+import { theme } from '@/theme';
 
 export default function Navbar() {
   const router = useRouter();
@@ -24,11 +25,13 @@ export default function Navbar() {
   return (
     <>
       {/* Mobile Menu Button */}
-      <button
-        onClick={() => setIsCanvasOpen(true)}
-        disabled={isLoggingOut}
-        className="md:hidden fixed top-4 right-4 z-50 shadow-md bg-black text-white p-3 rounded-md hover:bg-black/90 transition-all duration-200"
-      >
+   <button
+  onClick={() => setIsCanvasOpen(true)}
+  disabled={isLoggingOut}
+  className={`md:hidden fixed bottom-4 right-4 ${theme.gradients.hero} z-50 shadow-md ${
+    isLoggingOut ? 'pointer-events-none opacity-70' : ''
+  } text-white p-4 rounded-full hover:scale-105 transition-all duration-200`}
+>
         <FaBars size={20} />
       </button>
 
