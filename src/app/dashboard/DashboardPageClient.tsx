@@ -327,10 +327,7 @@ export default function DashboardPageClient() {
               ))}
             </div>
           ) : displayTeamMembers.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow-md">
-              <div className="text-gray-500 text-lg mb-4">No team members yet</div>
-              <p className="text-gray-400">Add team members to see them here</p>
-            </div>
+          <TeamEmptyState onAddMember={() => router.push('/team')} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {displayTeamMembers.map(member => (
