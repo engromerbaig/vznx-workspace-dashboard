@@ -11,6 +11,7 @@ import { FaArrowLeft, FaSync, FaTasks, FaCheck, FaClock, FaUser, FaEnvelope, FaB
 import { getCapacityInfo, CAPACITY_THRESHOLDS } from '@/utils/capacity';
 import { formatDateTime, formatTime } from '@/utils/dateFormatter';
 import { toast } from '@/components/ToastProvider';
+import Container from '@/components/Container';
 
 export default function TeamMemberDetailsPage() {
   const params = useParams();
@@ -187,8 +188,8 @@ export default function TeamMemberDetailsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 sm:p-6">
-      <div className="max-w-6xl mx-auto">
+       <Container>
+
 
         {/* Header */}
         <div className="mb-6 sm:mb-8">
@@ -381,7 +382,7 @@ export default function TeamMemberDetailsPage() {
             </div>
           )}
         </div>
-      </div>
-    </div>
+         </Container>
+
   );
 }

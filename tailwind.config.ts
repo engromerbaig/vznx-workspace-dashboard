@@ -19,6 +19,30 @@ const config: Config = {
         "borderColor": "ffff00 ",
         // Additional colors
         accent: "#FF4081",
+
+
+
+
+        // no use colors for now
+          'theme-blue': '#16B5B6',
+                                'neon': '#16B5B6',
+
+
+        'theme-dark': '#232323',
+        'theme-light': '#FFFFFF',
+
+        
+                'heading-light': '#737373',
+                        'heading-dark': '#fff',
+
+
+        'dark-offcanvas':"#353535",
+        'dark-hover':"#454545",
+        'light-hover':"#F5F5F5",
+        'body-text-light':"#737373",
+        'body-text-dark':"#fff",
+        'job-light':"#e5e7eb",
+        'job-dark':"rgba(245, 245, 245,0.5)",
         
     
       },

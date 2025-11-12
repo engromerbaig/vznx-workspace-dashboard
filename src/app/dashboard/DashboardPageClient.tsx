@@ -16,6 +16,7 @@ import { FaPlus, FaProjectDiagram, FaTasks, FaUsers, FaCheckCircle, FaArrowRight
 import { toast } from '@/components/ToastProvider';
 import { ProjectsEmptyState } from '@/components/empty-states/ProjectsEmptyState';
 import { TeamEmptyState } from '@/components/empty-states/TeamEmptyState';
+import Container from '@/components/Container';
 
 interface DashboardStats {
   totalProjects: number;
@@ -165,8 +166,7 @@ export default function DashboardPageClient() {
   const displayTeamMembers = teamMembers.slice(0, 3);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <Container >
         
         {/* Header */}
         <div className="text-center mb-8">
@@ -347,7 +347,6 @@ export default function DashboardPageClient() {
           onClose={() => setShowAddModal(false)}
           onSubmit={handleAddProject}
         />
-      </div>
-    </div>
+    </Container>
   );
 }

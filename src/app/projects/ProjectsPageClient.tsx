@@ -14,6 +14,7 @@ import { usePagination } from '@/hooks/usePagination';
 import { FaPlus, FaProjectDiagram, FaCheckCircle, FaClock, FaTasks } from 'react-icons/fa';
 import { toast } from '@/components/ToastProvider';
 import { ProjectsEmptyState } from '@/components/empty-states/ProjectsEmptyState';
+import Container from '@/components/Container';
 
 export default function ProjectsPageClient() {
   const { user } = useUser();
@@ -193,8 +194,8 @@ export default function ProjectsPageClient() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
+    <Container >
+
         
         {/* Projects Header */}
         <div className="flex justify-between items-center mb-6">
@@ -316,7 +317,8 @@ export default function ProjectsPageClient() {
           onClose={() => setShowAddModal(false)}
           onSubmit={handleAddProject}
         />
-      </div>
-    </div>
+
+      </Container>
+
   );
 }
