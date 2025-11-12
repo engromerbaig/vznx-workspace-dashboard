@@ -1,8 +1,9 @@
 // components/FilterBar.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
-import { FaSearch, FaFilter, FaTimes, FaCalendar } from 'react-icons/fa';
+import { useState, useEffect, useRef } from 'react';
+import { FaSearch, FaTimes, FaCalendar, FaRedo, FaSortAmountDown, FaSortAlphaDown } from 'react-icons/fa';
+import { MdSpeed } from 'react-icons/md';
 
 export interface FilterOptions {
   search: string;
@@ -20,6 +21,73 @@ interface FilterBarProps {
   placeholder?: string;
   className?: string;
 }
+
+interface DropdownProps {
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+  icon?: React.ReactNode;
+}
+
+const CustomDropdown = ({ label, value, options, onChange, icon }: DropdownProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find(opt => opt.value === value);
+
+  return (
+    <div className="relative" ref={dropdownRef}>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center gap-2 px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg hover:bg-white/20 transition-all duration-200 text-white text-sm whitespace-nowrap"
+      >
+        {icon && <span className="text-white/80">{icon}</span>}
+        <span className="font-medium">{selectedOption?.label || label}</span>
+        <svg 
+          className={`w-4 h-4 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
+          fill="none" 
+          stroke="currentColor" 
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 mt-2 bg-white rounded-lg shadow-xl border border-[#2B35A0]/20 overflow-hidden z-50 min-w-[200px]">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              onClick={() => {
+                onChange(option.value);
+                setIsOpen(false);
+              }}
+              className={`w-full px-4 py-2.5 text-left text-sm transition-colors duration-150 ${
+                value === option.value
+                  ? 'bg-[#2B35A0]/10 text-[#2B35A0] font-medium'
+                  : 'text-gray-700 hover:bg-gray-50'
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 export default function FilterBar({
   onFilterChange,
@@ -40,7 +108,6 @@ export default function FilterBar({
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [hasActiveFilters, setHasActiveFilters] = useState(false);
 
-  // Check if any filters are active
   useEffect(() => {
     const isActive = 
       filters.search !== '' ||
@@ -52,12 +119,10 @@ export default function FilterBar({
     setHasActiveFilters(isActive);
   }, [filters]);
 
-  // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
       onFilterChange(filters);
     }, 300);
-
     return () => clearTimeout(timer);
   }, [filters, onFilterChange]);
 
@@ -74,10 +139,7 @@ export default function FilterBar({
   };
 
   const handleDateRangeChange = (start: string, end: string) => {
-    setFilters(prev => ({
-      ...prev,
-      dateRange: { start, end }
-    }));
+    setFilters(prev => ({ ...prev, dateRange: { start, end } }));
   };
 
   const handleReset = () => {
@@ -90,96 +152,136 @@ export default function FilterBar({
     setShowDatePicker(false);
   };
 
+  const sortOptions: { value: string; label: string }[] = [
+    { value: 'recent', label: 'Recent First' },
+    { value: 'oldest', label: 'Oldest First' }
+  ];
+
+  const nameOptions: { value: string; label: string }[] = [
+    { value: 'name-asc', label: 'A to Z' },
+    { value: 'name-desc', label: 'Z to A' }
+  ];
+
+  const progressOptions: { value: string; label: string }[] = [
+    { value: 'progress-desc', label: 'High to Low' },
+    { value: 'progress-asc', label: 'Low to High' }
+  ];
+
+  const statusOptions: { value: string; label: string }[] = [
+    { value: 'all', label: 'All Status' },
+    { value: 'planning', label: 'Planning' },
+    { value: 'in-progress', label: 'In Progress' },
+    { value: 'completed', label: 'Completed' }
+  ];
+
+  const getSortType = () => {
+    if (['recent', 'oldest'].includes(filters.sortBy)) return 'date';
+    if (['name-asc', 'name-desc'].includes(filters.sortBy)) return 'name';
+    return 'progress';
+  };
+
+  const getSortValue = () => {
+    const sortType = getSortType();
+    if (sortType === 'date') return filters.sortBy;
+    if (sortType === 'name') return filters.sortBy;
+    return filters.sortBy;
+  };
+
   return (
-    <div className={`bg-white rounded-xl shadow-sm border border-gray-200 text-black p-4 mb-6 ${className}`}>
-      <div className="flex flex-col lg:flex-row gap-4">
+    <div className={`bg-gradient-to-br from-[#2B35A0] via-[#3642b8] to-[#2B35A0] rounded-xl shadow-lg border border-[#2B35A0]/30 p-4 mb-6 ${className}`}>
+      <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3">
         
         {/* Search Input */}
         <div className="flex-1 relative">
-          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+          <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50" />
           <input
             type="text"
             value={filters.search}
             onChange={(e) => handleSearchChange(e.target.value)}
             placeholder={placeholder}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200"
+            className="w-full pl-10 pr-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/40 outline-none transition-all duration-200 text-white placeholder-white/60"
           />
         </div>
 
-        {/* Sort By Dropdown */}
-        <div className="relative">
-          <select
-            value={filters.sortBy}
-            onChange={(e) => handleSortChange(e.target.value as FilterOptions['sortBy'])}
-            className="w-full lg:w-48 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200 appearance-none bg-white cursor-pointer"
-          >
-            <option value="recent">Recent First</option>
-            <option value="oldest">Oldest First</option>
-            <option value="name-asc">Name (A-Z)</option>
-            <option value="name-desc">Name (Z-A)</option>
-            <option value="progress-asc">Progress (Low-High)</option>
-            <option value="progress-desc">Progress (High-Low)</option>
-          </select>
-        </div>
+        {/* Sort by Date */}
+        <CustomDropdown
+          label="Date"
+          value={getSortType() === 'date' ? filters.sortBy : 'recent'}
+          options={sortOptions}
+          onChange={(value) => handleSortChange(value as FilterOptions['sortBy'])}
+          icon={<FaSortAmountDown />}
+        />
+
+        {/* Sort by Name */}
+        <CustomDropdown
+          label="Name"
+          value={getSortType() === 'name' ? filters.sortBy : 'name-asc'}
+          options={nameOptions}
+          onChange={(value) => handleSortChange(value as FilterOptions['sortBy'])}
+          icon={<FaSortAlphaDown />}
+        />
+
+        {/* Sort by Progress */}
+        <CustomDropdown
+          label="Progress"
+          value={getSortType() === 'progress' ? filters.sortBy : 'progress-desc'}
+          options={progressOptions}
+          onChange={(value) => handleSortChange(value as FilterOptions['sortBy'])}
+          icon={<MdSpeed />}
+        />
 
         {/* Status Filter */}
         {showStatusFilter && (
-          <div className="relative">
-            <select
-              value={filters.status}
-              onChange={(e) => handleStatusChange(e.target.value as FilterOptions['status'])}
-              className="w-full lg:w-48 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200 appearance-none bg-white cursor-pointer"
-            >
-              <option value="all">All Status</option>
-              <option value="planning">Planning</option>
-              <option value="in-progress">In Progress</option>
-              <option value="completed">Completed</option>
-            </select>
-          </div>
+          <CustomDropdown
+            label="Status"
+            value={filters.status}
+            options={statusOptions}
+            onChange={(value) => handleStatusChange(value as FilterOptions['status'])}
+          />
         )}
 
         {/* Date Range Toggle */}
         <button
           onClick={() => setShowDatePicker(!showDatePicker)}
-          className={`flex items-center gap-2 px-4 py-2.5 border rounded-lg transition-all duration-200 ${
+          className={`flex items-center gap-2 px-3 py-2 border rounded-lg transition-all duration-200 text-sm whitespace-nowrap ${
             filters.dateRange.start || filters.dateRange.end
-              ? 'border-primary bg-primary/10 text-primary'
-              : 'border-gray-300 hover:border-primary/50 text-gray-700'
+              ? 'bg-white text-[#2B35A0] border-white'
+              : 'bg-white/10 backdrop-blur-sm border-white/20 text-white hover:bg-white/20'
           }`}
         >
-          <FaCalendar />
-          <span className="hidden sm:inline">Date Range</span>
+          <FaCalendar className="text-sm" />
+          <span>Date Range</span>
         </button>
 
         {/* Reset Button */}
         {hasActiveFilters && (
           <button
             onClick={handleReset}
-            className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-all duration-200"
+            className="flex items-center gap-2 px-3 py-2 bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white border border-white/20 rounded-lg transition-all duration-200 text-sm whitespace-nowrap"
           >
-            <FaTimes />
-            <span className="hidden sm:inline">Reset</span>
+            <FaRedo className="text-sm" />
+            <span>Reset</span>
           </button>
         )}
       </div>
 
       {/* Date Range Picker */}
       {showDatePicker && (
-        <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+        <div className="mt-4 p-4 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white/90 mb-2">
                 Start Date
               </label>
               <input
                 type="date"
                 value={filters.dateRange.start}
                 onChange={(e) => handleDateRangeChange(e.target.value, filters.dateRange.end)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200"
+                className="w-full px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/40 outline-none transition-all duration-200 text-white [color-scheme:dark]"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-white/90 mb-2">
                 End Date
               </label>
               <input
@@ -187,7 +289,7 @@ export default function FilterBar({
                 value={filters.dateRange.end}
                 onChange={(e) => handleDateRangeChange(filters.dateRange.start, e.target.value)}
                 min={filters.dateRange.start}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200"
+                className="w-full px-3 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg focus:ring-2 focus:ring-white/50 focus:border-white/40 outline-none transition-all duration-200 text-white [color-scheme:dark]"
               />
             </div>
           </div>
@@ -198,40 +300,42 @@ export default function FilterBar({
       {hasActiveFilters && (
         <div className="mt-3 flex flex-wrap gap-2">
           {filters.search && (
-            <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary text-sm rounded-full">
-              Search: {filters.search}
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs rounded-full border border-white/30">
+              Search: <strong>{filters.search}</strong>
               <button
                 onClick={() => handleSearchChange('')}
-                className="hover:bg-primary/20 rounded-full p-0.5"
+                className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
               >
-                <FaTimes className="w-3 h-3" />
+                <FaTimes className="w-2.5 h-2.5" />
               </button>
             </span>
           )}
           {filters.sortBy !== 'recent' && (
-            <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary text-sm rounded-full">
-              Sort: {filters.sortBy}
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs rounded-full border border-white/30">
+              {sortOptions.find(o => o.value === filters.sortBy)?.label ||
+               nameOptions.find(o => o.value === filters.sortBy)?.label ||
+               progressOptions.find(o => o.value === filters.sortBy)?.label}
             </span>
           )}
           {filters.status !== 'all' && (
-            <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary text-sm rounded-full">
-              Status: {filters.status}
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs rounded-full border border-white/30">
+              {statusOptions.find(o => o.value === filters.status)?.label}
               <button
                 onClick={() => handleStatusChange('all')}
-                className="hover:bg-primary/20 rounded-full p-0.5"
+                className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
               >
-                <FaTimes className="w-3 h-3" />
+                <FaTimes className="w-2.5 h-2.5" />
               </button>
             </span>
           )}
           {(filters.dateRange.start || filters.dateRange.end) && (
-            <span className="inline-flex items-center gap-1 px-3 py-1 bg-primary/10 text-primary text-sm rounded-full">
-              Date: {filters.dateRange.start || '...'} to {filters.dateRange.end || '...'}
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-xs rounded-full border border-white/30">
+              {filters.dateRange.start || '...'} to {filters.dateRange.end || '...'}
               <button
                 onClick={() => handleDateRangeChange('', '')}
-                className="hover:bg-primary/20 rounded-full p-0.5"
+                className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
               >
-                <FaTimes className="w-3 h-3" />
+                <FaTimes className="w-2.5 h-2.5" />
               </button>
             </span>
           )}
