@@ -12,7 +12,7 @@ import Pagination from '@/components/Pagination';
 import { usePagination } from '@/hooks/usePagination';
 import { FaPlus, FaProjectDiagram, FaCheckCircle, FaClock, FaTasks } from 'react-icons/fa';
 import { toast } from '@/components/ToastProvider';
-
+import { ProjectsEmptyState } from '@/components/empty-states/ProjectsEmptyState';
 export default function ProjectsPageClient() {
   const { user } = useUser();
   const [projects, setProjects] = useState<BaseProject[]>([]);
@@ -233,22 +233,8 @@ export default function ProjectsPageClient() {
           </>
         ) : totalProjectsCount === 0 ? (
           // ✅ Centered No Projects UI
-          <div className="text-center py-12 sm:py-16 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-            <div className="text-gray-400 text-5xl sm:text-6xl mb-3 sm:mb-4">📂</div>
-            <div className="text-gray-500 text-lg mb-3 sm:mb-4">No projects yet</div>
-            <p className="text-gray-400 text-sm mb-4 sm:mb-6 max-w-md mx-auto px-4">
-              Get started by creating your first project. Projects help you organize your tasks and track progress efficiently.
-            </p>
-            <div className="flex justify-center">
-              <PrimaryButton
-                onClick={() => setShowAddModal(true)}
-                showIcon={true}
-                icon={FaPlus}
-              >
-                Create Your First Project
-              </PrimaryButton>
-            </div>
-          </div>
+               <ProjectsEmptyState onAddProject={() => setShowAddModal(true)} />
+
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

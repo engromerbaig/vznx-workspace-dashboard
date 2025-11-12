@@ -16,6 +16,8 @@ import { getProgressColor, getProgressMessage } from '@/utils/projectProgress';
 import { getProjectStats } from '@/utils/projectStats';
 import { toast } from '@/components/ToastProvider';
 import Loader from '@/components/Loader';
+import { TasksEmptyState } from '@/components/empty-states/TasksEmptyState';
+
 
 interface ProjectDetailsPageClientProps {
   slug: string;
@@ -344,22 +346,8 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
 
           {/* Tasks List */}
           {tasks.length === 0 ? (
-            <div className="text-center py-8 sm:py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
-              <div className="text-gray-400 text-4xl sm:text-6xl mb-3 sm:mb-4">📝</div>
-              <div className="text-gray-500 text-lg mb-3 sm:mb-4">No tasks yet</div>
-              <p className="text-gray-400 text-sm mb-4 sm:mb-6 max-w-md mx-auto px-4">
-                Get started by adding your first task to this project. Tasks help you track progress and assign work to team members.
-              </p>
-              <div className="flex justify-center">
-                <PrimaryButton
-                  onClick={() => setShowAddTaskModal(true)}
-                  showIcon={true}
-                  icon={FaPlus}
-                >
-                  Add First Task
-                </PrimaryButton>
-              </div>
-            </div>
+            <TasksEmptyState onAddTask={() => setShowAddTaskModal(true)} />
+            
           ) : (
             <div className="space-y-3">
               {tasks.map(task => (

@@ -13,6 +13,7 @@ import Pagination from '@/components/Pagination';
 import { usePagination } from '@/hooks/usePagination';
 import { FaPlus, FaUsers, FaTasks, FaCheckCircle, FaExclamationTriangle, FaCog } from 'react-icons/fa';
 import { toast } from '@/components/ToastProvider';
+import { TeamEmptyState } from '@/components/empty-states/TeamEmptyState';
 
 export default function TeamPageClient() {
   const [teamMembers, setTeamMembers] = useState<TeamMemberWithWorkload[]>([]);
@@ -314,33 +315,9 @@ export default function TeamPageClient() {
 
         {/* Team Members Grid */}
         {totalTeamMembersCount === 0 ? (
-          <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
-                <FaUsers className="text-gray-400 text-2xl" />
-              </div>
-            </div>
-            <h3 className="text-xl font-semibold text-gray-700 mb-2">No team members yet</h3>
-            <p className="text-gray-500 mb-6 max-w-md mx-auto">
-              Start by adding team members to monitor their workload capacity and task distribution.
-            </p>
-            <div className="flex justify-center gap-3">
-              <PrimaryButton 
-                onClick={() => setShowAddModal(true)} 
-                showIcon 
-                icon={FaPlus}
-              >
-                Add Your First Team Member
-              </PrimaryButton>
-              <button
-                onClick={() => handleMaxCapacityChange(8)}
-                className="px-6 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium flex items-center gap-2"
-              >
-                <FaCog />
-                Settings
-              </button>
-            </div>
-          </div>
+           <TeamEmptyState 
+            onAddMember={() => setShowAddModal(true)}
+          />
         ) : (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6 mb-8">
