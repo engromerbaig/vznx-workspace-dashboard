@@ -56,7 +56,6 @@ interface Theme {
   colors: Colors;
   sectionPaddings: SectionPaddings;
   gradients: Gradients;
-  navbar: Navbar;
   layoutPages: LayoutPages;
   hero: Hero;
   content: Content;
@@ -93,10 +92,7 @@ export const theme: Theme = {
     hero: 'bg-gradient-to-r from-primary to-visa-green',
   },
 
-  navbar: {
-    bgColor: 'sharedColors.bgColor',
-    textColor: sharedColors.textColor,
-  },
+
 
   layoutPages: {
     paddingHorizontal: 'px-4 md:px-10 lg:px-20',
