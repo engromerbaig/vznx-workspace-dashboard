@@ -14,6 +14,8 @@ import PrimaryButton from '@/components/PrimaryButton';
 import SkeletonLoader from '@/components/SkeletonLoader';
 import { FaPlus, FaProjectDiagram, FaTasks, FaUsers, FaCheckCircle, FaArrowRight } from 'react-icons/fa';
 import { toast } from '@/components/ToastProvider';
+import { ProjectsEmptyState } from '@/components/empty-states/ProjectsEmptyState';
+import { TeamEmptyState } from '@/components/empty-states/TeamEmptyState';
 
 interface DashboardStats {
   totalProjects: number;
@@ -277,19 +279,8 @@ export default function DashboardPageClient() {
               ))}
             </div>
           ) : recentProjects.length === 0 ? (
-            <div className="text-center py-12 bg-white rounded-lg shadow-md">
-              <div className="text-gray-500 text-lg mb-4">No projects yet</div>
-              <p className="text-gray-400 mb-6">Get started by creating your first project</p>
-              <div className="flex justify-center">
-                <PrimaryButton
-                  onClick={() => setShowAddModal(true)}
-                  showIcon={true}
-                  icon={FaPlus}
-                >
-                  Create Your First Project
-                </PrimaryButton>
-              </div>
-            </div>
+
+            <ProjectsEmptyState onAddProject={() => setShowAddModal(true)} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {recentProjects.map(project => (
