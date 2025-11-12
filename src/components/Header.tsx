@@ -2,6 +2,7 @@
 
 import { ReactNode } from 'react';
 import Heading from './Heading';
+import {theme} from '@/theme';
 
 interface HeaderProps {
   title: string;
@@ -32,7 +33,7 @@ const Header = ({
   text,
   icon,
   iconPosition = 'right',
-  bgColor = 'bg-primary',
+  bgColor = `${theme.gradients.hero}`,
   rounded = 'rounded-xl',
   className = '',
   

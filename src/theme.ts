@@ -89,8 +89,8 @@ export const theme: Theme = {
   },
 
   gradients: {
-    footer: 'bg-gradient-to-br from-theme-blue via-theme-blue to-visa-green',
-    hero: 'bg-gradient-to-r from-theme-blue to-theme-green',
+    footer: 'bg-gradient-to-br from-primary via-primary to-visa-green',
+    hero: 'bg-gradient-to-r from-primary to-visa-green',
   },
 
   navbar: {

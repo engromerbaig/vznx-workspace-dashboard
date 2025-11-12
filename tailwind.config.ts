@@ -43,6 +43,18 @@ const config: Config = {
         'body-text-dark':"#fff",
         'job-light':"#e5e7eb",
         'job-dark':"rgba(245, 245, 245,0.5)",
+
+
+
+              // visa colors
+          'visa-blue': '#37B6FF',
+'visa-green': '#7FDA58', 
+'visa-yellow': '#E9CF20',
+'visa-red': '#DF314A',
+'visa-sea-green': '#16B5B6',
+'visa-green-alternate': '#61CE70',
+
+'visa-pink':'#F76570',
         
     
       },
