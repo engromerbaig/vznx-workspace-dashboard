@@ -261,28 +261,24 @@ export default function TeamMemberDetailsPage() {
                 value={taskStats.totalTasks}
                 icon={<FaTasks />}
                 color="gray"
-                size="md"
               />
               <ProgressCard
                 title="Completed"
                 value={taskStats.completedTasks}
                 icon={<FaCheck />}
                 color="green"
-                size="md"
               />
               <ProgressCard
                 title="Pending"
                 value={taskStats.pendingTasks}
                 icon={<FaClock />}
                 color="blue"
-                size="md"
               />
               <ProgressCard
                 title="Completion Rate"
                 value={`${taskStats.completionRate}%`}
                 icon={<FaUser />}
                 color="orange"
-                size="md"
               />
             </div>
 

@@ -267,29 +267,25 @@ export default function TeamPageClient() {
               value={teamStats.totalMembers} 
               icon={<FaUsers />} 
               color="blue" 
-              size="md" 
-            />
+                          />
             <ProgressCard 
               title="Total Tasks" 
               value={`${teamStats.totalTasks}/${teamStats.totalMaxCapacity}`} 
               icon={<FaTasks />} 
               color="purple" 
-              size="md" 
-            />
+                          />
             <ProgressCard 
               title="Comfortable Load" 
               value={teamStats.comfortableLoad} 
               icon={<FaCheckCircle />} 
               color="green" 
-              size="md" 
-            />
+                          />
             <ProgressCard 
               title="Heavy Load" 
               value={teamStats.heavyLoad} 
               icon={<FaExclamationTriangle />} 
               color="red" 
-              size="md" 
-            />
+                          />
           </div>
         )}
 

@@ -208,7 +208,7 @@ export default function ProjectsPageClient() {
           <div>
          
             {totalProjectsCount > 0 && (
-              <p className="text-gray-700 font-medium border rounded-full px-2 py-1 text-xs mt-1">
+              <p className="text-gray-700  text-sm mt-1">
                 Showing {((pagination.currentPage - 1) * 6) + 1}-{Math.min(pagination.currentPage * 6, totalProjectsCount)} of {totalProjectsCount} projects
               </p>
             )}
@@ -230,32 +230,28 @@ export default function ProjectsPageClient() {
               value={allProjectsStats.totalProjects}
               icon={<FaProjectDiagram />}
               color="blue"
-              size="md"
-            />
+                      />
             
             <ProgressCard
               title="Completed"
               value={allProjectsStats.completedProjects}
               icon={<FaCheckCircle />}
               color="green"
-              size="md"
-            />
+                      />
             
             <ProgressCard
               title="In Progress"
               value={allProjectsStats.incompleteProjects}
               icon={<FaClock />}
               color="orange"
-              size="md"
-            />
+                      />
             
             <ProgressCard
               title="Total Tasks"
               value={allProjectsStats.totalTasks}
               icon={<FaTasks />}
               color="purple"
-              size="md"
-            />
+                      />
           </div>
         )}
 

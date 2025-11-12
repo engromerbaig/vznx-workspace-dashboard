@@ -257,28 +257,24 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
     value={projectStats.totalTasks}
     icon={<FaTasks />}
     color="gray"
-    size="md"
   />
   <ProgressCard
     title="Completed"
     value={projectStats.completedTasks}
     icon={<FaCheck />}
     color="green"
-    size="md"
   />
   <ProgressCard
     title="Pending"
     value={projectStats.pendingTasks}
     icon={<FaClock />}
     color="blue"
-    size="md"
   />
   <ProgressCard
     title="Progress"
     value={`${projectStats.progress}%`}
     icon={<FaChartLine />}
     color="orange"
-    size="md"
   />
 </div>
 
