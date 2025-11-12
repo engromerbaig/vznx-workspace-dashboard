@@ -118,10 +118,23 @@ export default function ProjectsPageClient() {
   };
 
   // Handle filter changes
-  const handleFilterChange = (newFilters: FilterOptions) => {
+ const handleFilterChange = (newFilters: FilterOptions) => {
     setFilters(newFilters);
     setIsFilterChange(true);
   };
+
+  // Reset to page 1 when filters change, then fetch
+  useEffect(() => {
+    if (isFilterChange) {
+      pagination.goToPage(1);
+      setIsFilterChange(false);
+    }
+  }, [filters]);
+
+  // Fetch projects when page changes OR filters change
+  useEffect(() => {
+    fetchProjects(pagination.currentPage);
+  }, [pagination.currentPage, filters]);
 
   // Reset to page 1 when filters change, then fetch
   useEffect(() => {
