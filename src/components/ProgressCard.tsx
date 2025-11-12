@@ -1,5 +1,6 @@
 // src/components/ProgressCard.tsx
 import { ReactNode } from 'react';
+import { CgArrowTopRightO } from "react-icons/cg";
 
 interface ProgressCardProps {
   title: string;
@@ -7,6 +8,8 @@ interface ProgressCardProps {
   icon?: ReactNode;
   color?: 'gray' | 'green' | 'blue' | 'orange' | 'red' | 'purple';
   size?: 'sm' | 'md' | 'lg';
+  href?: string; // Optional link
+  onClick?: () => void; // Optional click handler
 }
 
 export default function ProgressCard({ 
@@ -14,108 +17,138 @@ export default function ProgressCard({
   value, 
   icon, 
   color = 'gray',
-  size = 'md'
+  size = 'lg', // Default size changed to 'lg'
+  href,
+  onClick
 }: ProgressCardProps) {
   const colorClasses = {
     gray: { 
-      bg: 'bg-gradient-to-br from-gray-50 to-gray-100', 
-      border: 'border-gray-200', 
-      text: 'text-gray-800', 
-      label: 'text-gray-600',
-      iconBg: 'from-gray-200/30 to-gray-300/20'
+      bg: 'bg-gradient-to-br from-gray-50 to-gray-100/80', 
+      border: 'border-gray-200/80', 
+      text: 'text-gray-900', 
+      label: 'text-gray-700',
+      iconBg: 'from-gray-100 to-gray-200/50',
+      hover: 'hover:shadow-gray-200/50'
     },
     green: { 
-      bg: 'bg-gradient-to-br from-green-50 to-emerald-100', 
-      border: 'border-green-200', 
-      text: 'text-green-700', 
-      label: 'text-green-800',
-      iconBg: 'from-green-200/40 to-emerald-300/30'
+      bg: 'bg-gradient-to-br from-emerald-50/90 to-green-100/80', 
+      border: 'border-emerald-200/80', 
+      text: 'text-emerald-900', 
+      label: 'text-emerald-800',
+      iconBg: 'from-emerald-100 to-green-200/50',
+      hover: 'hover:shadow-emerald-200/50'
     },
     blue: { 
-      bg: 'bg-gradient-to-br from-blue-50 to-sky-100', 
-      border: 'border-blue-200', 
-      text: 'text-primary', 
-      label: 'text-primary/90',
-      iconBg: 'from-blue-200/40 to-sky-300/30'
+      bg: 'bg-gradient-to-br from-blue-50/90 to-sky-100/80', 
+      border: 'border-blue-200/80', 
+      text: 'text-blue-900', 
+      label: 'text-blue-800',
+      iconBg: 'from-blue-100 to-sky-200/50',
+      hover: 'hover:shadow-blue-200/50'
     },
     orange: { 
-      bg: 'bg-gradient-to-br from-orange-50 to-amber-100', 
-      border: 'border-orange-200', 
-      text: 'text-orange-700', 
-      label: 'text-orange-800',
-      iconBg: 'from-orange-200/40 to-amber-300/30'
+      bg: 'bg-gradient-to-br from-amber-50/90 to-orange-100/80', 
+      border: 'border-amber-200/80', 
+      text: 'text-amber-900', 
+      label: 'text-amber-800',
+      iconBg: 'from-amber-100 to-orange-200/50',
+      hover: 'hover:shadow-amber-200/50'
     },
     red: { 
-      bg: 'bg-gradient-to-br from-red-50 to-rose-100', 
-      border: 'border-red-200', 
-      text: 'text-red-700', 
-      label: 'text-red-800',
-      iconBg: 'from-red-200/40 to-rose-300/30'
+      bg: 'bg-gradient-to-br from-rose-50/90 to-red-100/80', 
+      border: 'border-rose-200/80', 
+      text: 'text-rose-900', 
+      label: 'text-rose-800',
+      iconBg: 'from-rose-100 to-red-200/50',
+      hover: 'hover:shadow-rose-200/50'
     },
     purple: { 
-      bg: 'bg-gradient-to-br from-purple-50 to-violet-100', 
-      border: 'border-purple-200', 
-      text: 'text-purple-700', 
-      label: 'text-purple-800',
-      iconBg: 'from-purple-200/40 to-violet-300/30'
+      bg: 'bg-gradient-to-br from-violet-50/90 to-purple-100/80', 
+      border: 'border-violet-200/80', 
+      text: 'text-violet-900', 
+      label: 'text-violet-800',
+      iconBg: 'from-violet-100 to-purple-200/50',
+      hover: 'hover:shadow-violet-200/50'
     }
   };
 
   const sizeClasses = {
     sm: { 
-      padding: 'p-4', 
-      text: 'text-2xl font-bold', 
+      padding: 'p-5', 
+      text: 'text-3xl font-black',
       label: 'text-sm font-semibold', 
-      iconSize: 'text-4xl',
-      container: 'min-h-[100px]'
+      iconSize: 'text-5xl',
+      container: 'min-h-[110px]',
+      linkIcon: 'text-lg'
     },
     md: { 
-      padding: 'p-5', 
-      text: 'text-3xl font-bold', 
+      padding: 'p-6', 
+      text: 'text-4xl font-black',
       label: 'text-base font-semibold', 
-      iconSize: 'text-5xl',
-      container: 'min-h-[120px]'
+      iconSize: 'text-6xl',
+      container: 'min-h-[130px]',
+      linkIcon: 'text-xl'
     },
     lg: { 
-      padding: 'p-6', 
-      text: 'text-4xl font-bold', 
+      padding: 'p-7', 
+      text: 'text-5xl font-black',
       label: 'text-lg font-semibold', 
-      iconSize: 'text-6xl',
-      container: 'min-h-[140px]'
+      iconSize: 'text-7xl',
+      container: 'min-h-[180px]',
+      linkIcon: 'text-2xl'
     }
   };
 
   const currentColor = colorClasses[color];
   const currentSize = sizeClasses[size];
 
-  return (
+  const CardContent = () => (
     <div className={`
       relative 
       ${currentColor.bg} 
-      rounded-xl 
+      rounded-2xl 
       ${currentSize.padding} 
       border 
       ${currentColor.border} 
       ${currentSize.container}
-      shadow-sm 
-      hover:shadow-md 
+      shadow-lg 
+      ${currentColor.hover}
+      hover:shadow-xl 
+      hover:scale-[1.02]
       transition-all 
       duration-300 
       overflow-hidden
       group
+      cursor-pointer
+      flex flex-col justify-center // Ensure vertical centering
     `}>
-      {/* Background Icon with Gradient */}
+      {/* Link Icon - Top Right */}
+      {(href || onClick) && (
+        <div className="absolute top-4 right-4 z-20">
+          <CgArrowTopRightO className={`
+            ${currentSize.linkIcon} 
+            ${currentColor.text} 
+            opacity-60 
+            group-hover:opacity-100 
+            group-hover:scale-110 
+            transition-all 
+            duration-300
+          `} />
+        </div>
+      )}
+
+      {/* Background Icon with Better Gradient */}
       {icon && (
         <div className={`
           absolute 
-          bottom-2 
-          right-2 
+          bottom-4 
+          right-4 
           ${currentSize.iconSize} 
           ${currentColor.text} 
-          opacity-20 
+          opacity-15
           transform 
           group-hover:scale-110 
-          group-hover:opacity-60 
+          group-hover:opacity-25 
           transition-all 
           duration-500
           z-0
@@ -124,21 +157,61 @@ export default function ProgressCard({
         </div>
       )}
       
-      {/* Subtle Pattern Overlay */}
-      <div className={`absolute inset-0 bg-gradient-to-br ${currentColor.iconBg} z-0`} />
+      {/* Enhanced Gradient Overlay */}
+      <div className={`
+        absolute 
+        inset-0 
+        bg-gradient-to-br 
+        ${currentColor.iconBg} 
+        opacity-60
+        z-0
+      `} />
       
-      {/* Content */}
-      <div className="relative z-10 h-full flex flex-col justify-center">
-        <div className={`${currentSize.text} ${currentColor.text} mb-2 leading-none`}>
+      {/* Content - Always vertically centered */}
+      <div className="relative z-10">
+        <div className={`${currentSize.text} ${currentColor.text} mb-3 leading-tight drop-shadow-sm`}>
           {value}
         </div>
-        <div className={`${currentSize.label} ${currentColor.label} leading-tight`}>
+        <div className={`${currentSize.label} ${currentColor.label} leading-tight font-medium`}>
           {title}
         </div>
       </div>
 
-      {/* Hover Effect Border */}
-      <div className="absolute inset-0 rounded-xl border-2 border-transparent group-hover:border-white/30 transition-all duration-300 pointer-events-none" />
+      {/* Enhanced Hover Effect Border */}
+      <div className="
+        absolute 
+        inset-0 
+        rounded-2xl 
+        border-2 
+        border-transparent 
+        group-hover:border-white/40 
+        group-hover:shadow-inner
+        transition-all 
+        duration-300 
+        pointer-events-none 
+        z-0
+      " />
     </div>
   );
+
+  // Render as link if href is provided
+  if (href) {
+    return (
+      <a href={href} className="block no-underline">
+        <CardContent />
+      </a>
+    );
+  }
+
+  // Render as button if onClick is provided
+  if (onClick) {
+    return (
+      <button onClick={onClick} className="block w-full text-left border-none bg-transparent p-0">
+        <CardContent />
+      </button>
+    );
+  }
+
+  // Default render
+  return <CardContent />;
 }

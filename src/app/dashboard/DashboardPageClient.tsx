@@ -196,40 +196,42 @@ export default function DashboardPageClient() {
               ))}
             </>
           ) : (
-            <>
-              <ProgressCard
-                title="Total Projects"
-                value={dashboardStats.totalProjects}
-                icon={<FaProjectDiagram />}
-                color="blue"
-                size="md"
-              />
-              
-              <ProgressCard
-                title="Completed Projects"
-                value={dashboardStats.completedProjects}
-                icon={<FaCheckCircle />}
-                color="green"
-                size="md"
-              />
-              
-              <ProgressCard
-                title="Total Tasks"
-                value={dashboardStats.totalTasks}
-                icon={<FaTasks />}
-                color="purple"
-                size="md"
-              />
-              
-              {/* ✅ Now shows correct total */}
-              <ProgressCard
-                title="Team Members"
-                value={dashboardStats.totalTeamMembers}
-                icon={<FaUsers />}
-                color="orange"
-                size="md"
-              />
-            </>
+        <>
+  <ProgressCard
+    title="Total Projects"
+    value={dashboardStats.totalProjects}
+    icon={<FaProjectDiagram />}
+    color="blue"
+    size="lg"
+    href="/projects"
+  />
+  
+  <ProgressCard
+    title="Completed Projects"
+    value={dashboardStats.completedProjects}
+    icon={<FaCheckCircle />}
+    color="green"
+    size="lg"
+  />
+  
+  <ProgressCard
+    title="Total Tasks"
+    value={dashboardStats.totalTasks}
+    icon={<FaTasks />}
+    color="purple"
+    size="lg"
+  />
+  
+  {/* ✅ Now shows correct total */}
+  <ProgressCard
+    title="Team Members"
+    value={dashboardStats.totalTeamMembers}
+    icon={<FaUsers />}
+    color="orange"
+    size="lg"
+    href="/team"
+  />
+</>
           )}
         </div>
 
