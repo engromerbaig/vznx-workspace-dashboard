@@ -18,6 +18,7 @@ import { ProjectsEmptyState } from '@/components/empty-states/ProjectsEmptyState
 import { TeamEmptyState } from '@/components/empty-states/TeamEmptyState';
 import Header from '@/components/Header';
 import { MdOutlineSpaceDashboard } from "react-icons/md";
+import UserCard from '@/components/UserCard';
 
 
 interface DashboardStats {
@@ -177,12 +178,8 @@ export default function DashboardPageClient() {
 
 />
         {/* Welcome Message */}
-        <div className="bg-white p-6 rounded-lg shadow-md mb-8">
-          <h2 className="text-xl font-bold mb-2 text-black">Welcome back, {user?.username}!</h2>
-          <div className="flex items-center gap-4 text-sm text-gray-600">
-            <span>Email: {user?.email}</span>
-          </div>
-        </div>
+{user && <UserCard user={user} />}
+
 
         {/* Dashboard Stats using ProgressCard - NOW USING ACCURATE STATS */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
