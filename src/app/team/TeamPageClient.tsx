@@ -14,7 +14,6 @@ import { usePagination } from '@/hooks/usePagination';
 import { FaPlus, FaUsers, FaTasks, FaCheckCircle, FaExclamationTriangle, FaCog } from 'react-icons/fa';
 import { toast } from '@/components/ToastProvider';
 import { TeamEmptyState } from '@/components/empty-states/TeamEmptyState';
-import Container from '@/components/Container';
 
 export default function TeamPageClient() {
   const [teamMembers, setTeamMembers] = useState<TeamMemberWithWorkload[]>([]);
@@ -223,7 +222,7 @@ export default function TeamPageClient() {
   }
 
   return (
-       <Container>
+       <>
 
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-8">
@@ -362,7 +361,7 @@ export default function TeamPageClient() {
           onSubmit={handleAddTeamMember}
           defaultMaxCapacity={globalMaxCapacity}
         />
-      </Container>
+      </>
 
   );
 }

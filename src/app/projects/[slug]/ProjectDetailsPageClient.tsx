@@ -17,7 +17,6 @@ import { getProjectStats } from '@/utils/projectStats';
 import { toast } from '@/components/ToastProvider';
 import Loader from '@/components/Loader';
 import { TasksEmptyState } from '@/components/empty-states/TasksEmptyState';
-import Container from '@/components/Container';
 
 
 interface ProjectDetailsPageClientProps {
@@ -193,7 +192,7 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
   }
 
   return (
-    <Container>
+    <>
         
         {/* Header */}
         <div className="mb-6 sm:mb-8">
@@ -388,7 +387,7 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
           onClose={() => setShowAddTaskModal(false)}
           onSubmit={handleAddTask}
         />
-    </Container>
+    </>
 
   );
 }

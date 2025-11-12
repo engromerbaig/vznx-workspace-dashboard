@@ -14,7 +14,6 @@ import { usePagination } from '@/hooks/usePagination';
 import { FaPlus, FaProjectDiagram, FaCheckCircle, FaClock, FaTasks } from 'react-icons/fa';
 import { toast } from '@/components/ToastProvider';
 import { ProjectsEmptyState } from '@/components/empty-states/ProjectsEmptyState';
-import Container from '@/components/Container';
 
 export default function ProjectsPageClient() {
   const { user } = useUser();
@@ -194,7 +193,7 @@ export default function ProjectsPageClient() {
   };
 
   return (
-    <Container >
+    <>
 
         
         {/* Projects Header */}
@@ -318,7 +317,7 @@ export default function ProjectsPageClient() {
           onSubmit={handleAddProject}
         />
 
-      </Container>
+      </>
 
   );
 }

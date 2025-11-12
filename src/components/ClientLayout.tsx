@@ -1,6 +1,7 @@
 // app/components/ClientLayout.tsx
 'use client';
 import { usePathname } from 'next/navigation';
+import Container from './Container';
 
 export default function ClientLayout({
   children,
@@ -9,15 +10,16 @@ export default function ClientLayout({
 }) {
   const pathname = usePathname();
   const isRoot = pathname === '/';
-  const isNotFound = pathname === '/404'; // Detect 404 page
+  const isNotFound = pathname === '/404';
 
   return (
-    <main
+    <Container
+      disableOnRoot={isRoot} // This will disable container styles on root page
       className={`flex-1 transition-all duration-300 ${
         !isRoot && !isNotFound ? 'md:ml-64' : ''
       }`}
     >
       {children}
-    </main>
+    </Container>
   );
 }
