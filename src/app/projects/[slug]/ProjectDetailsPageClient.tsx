@@ -15,7 +15,7 @@ import { getStatusColors, formatStatusText } from '@/utils/projectStatus';
 import { getProgressColor, getProgressMessage } from '@/utils/projectProgress';
 import { getProjectStats } from '@/utils/projectStats';
 import { toast } from '@/components/ToastProvider';
-import Loader from '@/components/Loader';
+import SkeletonLoader from '@/components/SkeletonLoader';
 import TaskList from '@/components/TaskList';
 
 interface ProjectDetailsPageClientProps {
@@ -99,64 +99,86 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
 
   const handleTaskUpdate = () => fetchProjectData();
 
-  if (isLoading) return <Loader text='Loading Project...' />;
-  if (error) return <div>Error: {error}</div>;
-  if (!project) return <div>Project not found</div>;
-
-  const projectStats = getProjectStats(project);
-  const statusColors = getStatusColors(project.status);
-
-  // Skeleton Loader (preserved from original)
+  // Initial Loading State
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
-          <div className="animate-pulse">
-            {/* Back button skeleton */}
-            <div className="h-6 bg-gray-200 rounded w-24 mb-6"></div>
+          {/* Back button skeleton */}
+          <div className="mb-6 sm:mb-8">
+            <SkeletonLoader width="w-32" height="h-6" className="mb-4" />
             
             {/* Project header skeleton */}
-            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-              <div className="flex justify-between items-start mb-4">
-                <div className="flex-1">
-                  <div className="h-8 bg-gray-200 rounded w-1/2 mb-2"></div>
-                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
+                <div className="flex-1 space-y-3">
+                  <SkeletonLoader width="w-3/4 sm:w-1/2" height="h-8" />
+                  <SkeletonLoader width="w-full sm:w-3/4" height="h-5" />
+                  <div className="flex items-center gap-4">
+                    <SkeletonLoader width="w-32" height="h-4" />
+                    <SkeletonLoader width="w-32" height="h-4" />
+                  </div>
                 </div>
-                <div className="h-6 bg-gray-200 rounded w-20"></div>
+                <div className="flex gap-2">
+                  <SkeletonLoader width="w-24" height="h-6" className="rounded-full" />
+                  <SkeletonLoader width="w-20" height="h-6" className="rounded-full" />
+                </div>
               </div>
               
               {/* Progress stats skeleton */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
                 {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="bg-gray-50 rounded-lg p-4">
-                    <div className="h-8 bg-gray-200 rounded w-12 mx-auto mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-16 mx-auto"></div>
+                  <div key={i} className="bg-gray-50 rounded-lg p-4 flex flex-col items-center">
+                    <SkeletonLoader width="w-12" height="h-8" className="mb-2" />
+                    <SkeletonLoader width="w-20" height="h-4" />
                   </div>
                 ))}
               </div>
-            </div>
 
-            {/* Tasks header skeleton */}
-            <div className="flex justify-between items-center mb-6">
-              <div className="h-6 bg-gray-200 rounded w-32"></div>
-              <div className="flex gap-3">
-                <div className="h-10 bg-gray-200 rounded w-24"></div>
-                <div className="h-10 bg-gray-200 rounded w-24"></div>
+              {/* Progress bar skeleton */}
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <SkeletonLoader width="w-32" height="h-4" />
+                  <SkeletonLoader width="w-12" height="h-4" />
+                </div>
+                <SkeletonLoader width="w-full" height="h-3" className="rounded-full" />
+                <SkeletonLoader width="w-48" height="h-3" className="mx-auto" />
               </div>
             </div>
+          </div>
 
-            {/* Tasks list skeleton */}
-            <div className="space-y-3">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-16 bg-gray-200 rounded"></div>
-              ))}
+          {/* Tasks header skeleton */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <SkeletonLoader width="w-40" height="h-7" />
+            <div className="flex gap-3 self-end sm:self-auto">
+              <SkeletonLoader width="w-24" height="h-10" />
+              <SkeletonLoader width="w-32" height="h-10" />
             </div>
+          </div>
+
+          {/* Tasks list skeleton */}
+          <div className="space-y-3">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-lg shadow-sm p-4">
+                <div className="flex justify-between items-start gap-4">
+                  <div className="flex-1 space-y-2">
+                    <SkeletonLoader width="w-3/4" height="h-5" />
+                    <SkeletonLoader width="w-1/2" height="h-4" />
+                  </div>
+                  <div className="flex gap-2">
+                    <SkeletonLoader width="w-20" height="h-6" className="rounded-full" />
+                    <SkeletonLoader width="w-8" height="h-8" variant="circle" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
     );
   }
 
+  // Error State
   if (error && !project) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
@@ -190,137 +212,137 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
     );
   }
 
+  const projectStats = getProjectStats(project);
+  const statusColors = getStatusColors(project.status);
+
   return (
     <>
-        
-        {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-            <button
-              onClick={() => router.push('/projects')}
-              className="flex items-center gap-2 cursor-pointer text-primary hover:text-blue-800 transition-colors font-medium self-start"
-            >
-              <FaArrowLeft className='text-sm' />
-              Back to Projects
-            </button>
-            
-            <div className="flex items-center gap-4">
-              <div className="text-xs text-gray-500 hidden sm:block">
-                Last synced: {formatTime(lastUpdated)}
-              </div>
-              <button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
-                title="Refresh data"
-              >
-                <FaSync className={`text-sm ${isRefreshing ? 'animate-spin' : ''}`} />
-                <span className="hidden sm:inline">
-                  {isRefreshing ? 'Refreshing...' : 'Refresh'}
-                </span>
-              </button>
-            </div>
-          </div>
+      {/* Header */}
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <button
+            onClick={() => router.push('/projects')}
+            className="flex items-center gap-2 cursor-pointer text-primary hover:text-blue-800 transition-colors font-medium self-start"
+          >
+            <FaArrowLeft className='text-sm' />
+            Back to Projects
+          </button>
           
-          {/* Project Info Card */}
-          <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
-              <div className="flex-1">
-                <h1 className="text-2xl uppercase sm:text-3xl font-bold text-gray-800 mb-2 break-words">
-                  {project.name}
-                </h1>
-                {project.description && (
-                  <p className="text-gray-600 text-base sm:text-lg break-words">
-                    {project.description}
-                  </p>
-                )}
-                <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-                  <span>Created: {formatDateTime(project.createdAt)}</span>
-                  <span>Updated: {formatDateTime(project.updatedAt)}</span>
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusColors.background} ${statusColors.text} whitespace-nowrap`}>
-                  {formatStatusText(project.status).toUpperCase()}
-                </span>
-                <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800 whitespace-nowrap">
-                  {project.slug}
-                </span>
-              </div>
+          <div className="flex items-center gap-4">
+            <div className="text-xs text-gray-500 hidden sm:block">
+              Last synced: {formatTime(lastUpdated)}
             </div>
-
-            {/* Progress Overview using ProgressCard */}
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center mb-6">
-  <ProgressCard
-    title="Total Tasks"
-    value={projectStats.totalTasks}
-    icon={<FaTasks />}
-    color="gray"
-  />
-  <ProgressCard
-    title="Completed"
-    value={projectStats.completedTasks}
-    icon={<FaCheck />}
-    color="green"
-  />
-  <ProgressCard
-    title="Pending"
-    value={projectStats.pendingTasks}
-    icon={<FaClock />}
-    color="blue"
-  />
-  <ProgressCard
-    title="Progress"
-    value={`${projectStats.progress}%`}
-    icon={<FaChartLine />}
-    color="orange"
-  />
-</div>
-
-            {/* Progress Bar */}
-            {projectStats.totalTasks > 0 && (
-              <div className="mt-4 sm:mt-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-700">Overall Progress</span>
-                  <span className="text-sm font-bold text-gray-800">{projectStats.progress}%</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
-                  <div 
-                    className={`h-2 sm:h-3 rounded-full transition-all duration-500 ease-out`}
-                    style={{ 
-                      width: `${projectStats.progress}%`,
-                      backgroundColor: getProgressColor(projectStats.progress)
-                    }}
-                  ></div>
-                </div>
-                <div className="text-xs text-gray-500 text-center mt-2 font-medium">
-                  {getProgressMessage(projectStats.progress)}
-                </div>
-              </div>
-            )}
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
+              title="Refresh data"
+            >
+              <FaSync className={`text-sm ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">
+                {isRefreshing ? 'Refreshing...' : 'Refresh'}
+              </span>
+            </button>
           </div>
         </div>
+        
+        {/* Project Info Card */}
+        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
+            <div className="flex-1">
+              <h1 className="text-2xl uppercase sm:text-3xl font-bold text-gray-800 mb-2 break-words">
+                {project.name}
+              </h1>
+              {project.description && (
+                <p className="text-gray-600 text-base sm:text-lg break-words">
+                  {project.description}
+                </p>
+              )}
+              <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
+                <span>Created: {formatDateTime(project.createdAt)}</span>
+                <span>Updated: {formatDateTime(project.updatedAt)}</span>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusColors.background} ${statusColors.text} whitespace-nowrap`}>
+                {formatStatusText(project.status).toUpperCase()}
+              </span>
+              <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800 whitespace-nowrap">
+                {project.slug}
+              </span>
+            </div>
+          </div>
 
-        {/* Tasks Section */}
-     <TaskList
-  tasks={tasks}
-  totalTasks={projectStats.totalTasks}
-  completedTasks={projectStats.completedTasks}
-  pendingTasks={projectStats.pendingTasks}
-  onTaskUpdate={handleTaskUpdate}
-  onAddTask={() => setShowAddTaskModal(true)}
-  error={error}
-    pageSize={10} // You can customize this per project if needed
+          {/* Progress Overview using ProgressCard */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center mb-6">
+            <ProgressCard
+              title="Total Tasks"
+              value={projectStats.totalTasks}
+              icon={<FaTasks />}
+              color="gray"
+            />
+            <ProgressCard
+              title="Completed"
+              value={projectStats.completedTasks}
+              icon={<FaCheck />}
+              color="green"
+            />
+            <ProgressCard
+              title="Pending"
+              value={projectStats.pendingTasks}
+              icon={<FaClock />}
+              color="blue"
+            />
+            <ProgressCard
+              title="Progress"
+              value={`${projectStats.progress}%`}
+              icon={<FaChartLine />}
+              color="orange"
+            />
+          </div>
 
-/>
+          {/* Progress Bar */}
+          {projectStats.totalTasks > 0 && (
+            <div className="mt-4 sm:mt-6">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">Overall Progress</span>
+                <span className="text-sm font-bold text-gray-800">{projectStats.progress}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
+                <div 
+                  className={`h-2 sm:h-3 rounded-full transition-all duration-500 ease-out`}
+                  style={{ 
+                    width: `${projectStats.progress}%`,
+                    backgroundColor: getProgressColor(projectStats.progress)
+                  }}
+                ></div>
+              </div>
+              <div className="text-xs text-gray-500 text-center mt-2 font-medium">
+                {getProgressMessage(projectStats.progress)}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
 
-        {/* Add Task Modal */}
-        <AddTaskModal
-          isOpen={showAddTaskModal}
-          onClose={() => setShowAddTaskModal(false)}
-          onSubmit={handleAddTask}
-        />
+      {/* Tasks Section */}
+      <TaskList
+        tasks={tasks}
+        totalTasks={projectStats.totalTasks}
+        completedTasks={projectStats.completedTasks}
+        pendingTasks={projectStats.pendingTasks}
+        onTaskUpdate={handleTaskUpdate}
+        onAddTask={() => setShowAddTaskModal(true)}
+        error={error}
+        pageSize={10}
+      />
+
+      {/* Add Task Modal */}
+      <AddTaskModal
+        isOpen={showAddTaskModal}
+        onClose={() => setShowAddTaskModal(false)}
+        onSubmit={handleAddTask}
+      />
     </>
-
   );
 }
