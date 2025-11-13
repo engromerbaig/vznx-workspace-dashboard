@@ -8,6 +8,7 @@ import InputField from '@/components/InputField';
 import PrimaryButton from '@/components/PrimaryButton';
 import { AUTH_CONFIG } from '@/lib/auth-config';
 import { toast } from '@/components/ToastProvider';
+import { theme } from '@/theme';
 
 export default function LoginForm() {
   const [email, setEmail] = useState('');
@@ -133,6 +134,7 @@ export default function LoginForm() {
           showIcon={!isSubmitting}
           icon={FaSignInAlt}
           iconPosition="left"
+          bgColor={theme.gradients.hero}
         >
           Sign In
         </PrimaryButton>
