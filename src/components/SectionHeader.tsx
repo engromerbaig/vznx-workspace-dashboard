@@ -45,7 +45,7 @@ export default function SectionHeader({
     <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
       {/* Title with optional icon */}
       <Heading 
-        titleColor='text-black'  
+        titleColor='text-gradient-hero'  
         title={title} 
         showUnderline 
         icon={icon} // Pass the icon to Heading

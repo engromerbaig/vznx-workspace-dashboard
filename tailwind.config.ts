@@ -11,7 +11,7 @@ const config: Config = {
       colors: {
         // Main theme colors
         background: "#000000",
-        dark:"#3B4136",
+        dark: "#3B4136",
         foreground: "#000000",
         "primary": "#2B35A0",
         "secondary": "#B6B7BB",
@@ -21,43 +21,36 @@ const config: Config = {
         // Additional colors
         accent: "#FF4081",
 
-
-
-
         // no use colors for now
-          'theme-blue': '#16B5B6',
-                                'neon': '#16B5B6',
-
+        'theme-blue': '#16B5B6',
+        'neon': '#16B5B6',
 
         'theme-dark': '#232323',
         'theme-light': '#FFFFFF',
 
-        
-                'heading-light': '#737373',
-                        'heading-dark': '#fff',
+        'heading-light': '#737373',
+        'heading-dark': '#fff',
 
+        'dark-offcanvas': "#353535",
+        'dark-hover': "#454545",
+        'light-hover': "#F5F5F5",
+        'body-text-light': "#737373",
+        'body-text-dark': "#fff",
+        'job-light': "#e5e7eb",
+        'job-dark': "rgba(245, 245, 245,0.5)",
 
-        'dark-offcanvas':"#353535",
-        'dark-hover':"#454545",
-        'light-hover':"#F5F5F5",
-        'body-text-light':"#737373",
-        'body-text-dark':"#fff",
-        'job-light':"#e5e7eb",
-        'job-dark':"rgba(245, 245, 245,0.5)",
-
-
-
-              // visa colors
-          'visa-blue': '#37B6FF',
-'visa-green': '#7FDA58', 
-'visa-yellow': '#E9CF20',
-'visa-red': '#DF314A',
-'visa-sea-green': '#16B5B6',
-'visa-green-alternate': '#61CE70',
-
-'visa-pink':'#F76570',
-        
-    
+        // visa colors
+        'visa-blue': '#37B6FF',
+        'visa-green': '#7FDA58',
+        'visa-yellow': '#E9CF20',
+        'visa-red': '#DF314A',
+        'visa-sea-green': '#16B5B6',
+        'visa-green-alternate': '#61CE70',
+        'visa-pink': '#F76570',
+      },
+      backgroundImage: {
+        'hero-gradient': 'linear-gradient(to bottom right, #2B35A0, #A855F7)',
+        'gradient-to-br-primary': 'linear-gradient(to bottom right, var(--tw-gradient-stops))',
       },
       fontFamily: {
         sans: ["var(--font-geist-sans)", "ui-sans-serif", "system-ui", "-apple-system", "BlinkMacSystemFont"],
@@ -83,7 +76,28 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [
+    // Plugin for text gradients and other gradient utilities
+    function({ addUtilities }: { addUtilities: any }) {
+      const newUtilities = {
+        '.text-gradient-hero': {
+          backgroundImage: 'linear-gradient(to bottom right, #2B35A0, #A855F7)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          backgroundClip: 'text',
+        },
+        '.border-gradient-hero': {
+          borderImage: 'linear-gradient(to bottom right, #2B35A0, #A855F7) 1',
+        },
+        '.from-primary-to-tertiary': {
+          '--tw-gradient-from': '#2B35A0',
+          '--tw-gradient-to': '#A855F7',
+          '--tw-gradient-stops': 'var(--tw-gradient-from), var(--tw-gradient-to)',
+        },
+      };
+      addUtilities(newUtilities, ['responsive', 'hover']);
+    },
+  ],
 };
 
 export default config;
