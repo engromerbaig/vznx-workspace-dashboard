@@ -6,7 +6,6 @@ import { theme } from '@/theme';
 interface HeadingProps {
   title: string;
   titleColor?: string;
-
   titleSize?: string;
   titleWeight?: string;
   titleMargin?: string;
@@ -24,6 +23,7 @@ interface HeadingProps {
   underlineHeight?: string;
   underlineOffset?: string;
 
+  icon?: ReactNode; // New optional icon prop
   className?: string;
 }
 
@@ -48,30 +48,43 @@ const Heading = ({
   underlineHeight = 'h-1',
   underlineOffset = 'bottom-2',
 
+  icon = false, // Default to false
   className = '',
 }: HeadingProps) => {
   return (
     <div className={`relative ${className}`}>
       {title && (
         <div className="relative inline-block w-full">
-          <h1
-            className={`${titleSize} ${titleWeight} ${titleAlign} ${titleColor} ${titleMargin}`}
-            style={{ lineHeight: titleLineHeight }}
-          >
-            {title}
-          </h1>
+          <div className={`flex items-center justify-${titleAlign === 'text-center' ? 'center' : titleAlign === 'text-right' ? 'end' : 'start'} gap-3`}>
+            {icon && (
+              <div className="text-primary">
+                {icon}
+              </div>
+            )}
+            <h1
+              className={`${titleSize} ${titleWeight} ${titleAlign} ${titleColor} ${titleMargin}`}
+              style={{ lineHeight: titleLineHeight }}
+            >
+              {title}
+            </h1>
+          </div>
 
-          {/* ---- Custom Underline with Tailwind Gradient ---- */}
-          {showUnderline && (
-            <span
-              className={`
-                absolute left-0 ${underlineOffset} w-full ${underlineHeight}
-                rounded-none
-                md:bottom-3 md:h-1.5
-                lg:bottom-[-3px] lg:h-2
-                ${theme.gradients.hero}   // This applies the gradient!
-              `}
-            />
+          {/* ---- Custom Underline (width matches title content) ---- */}
+             {showUnderline && (
+            <div className="flex justify-start">
+              <span
+                className={`
+                  ${underlineHeight} rounded-none text-primary
+                  md:h-1.5
+                  lg:h-2
+                  ${theme.gradients.hero}
+                `}
+                style={{ 
+                  width: '50%',
+                  minWidth: '50px' // Ensure it has some minimum width
+                }}
+              />
+            </div>
           )}
         </div>
       )}
