@@ -5,6 +5,8 @@ import { BaseTask } from '@/types/task';
 import TaskItem from '@/components/TaskItem';
 import { TasksEmptyState } from '@/components/empty-states/TasksEmptyState';
 import PrimaryButton from '@/components/PrimaryButton';
+import TaskPaginationControls from '@/components/TaskPaginationControls';
+import { useTaskPagination } from '@/hooks/useTaskPagination';
 import { FaPlus, FaCheck, FaCircle } from 'react-icons/fa';
 
 interface TaskListProps {
@@ -15,6 +17,7 @@ interface TaskListProps {
   onTaskUpdate: () => void;
   onAddTask: () => void;
   error?: string | null;
+  pageSize?: number; // Add pageSize prop
 }
 
 export default function TaskList({
@@ -24,8 +27,24 @@ export default function TaskList({
   pendingTasks,
   onTaskUpdate,
   onAddTask,
-  error
+  error,
+  pageSize = 10 // Default page size
 }: TaskListProps) {
+  const {
+    paginatedTasks,
+    currentPage,
+    totalPages,
+    canPrevPage,
+    canNextPage,
+    prevPage,
+    nextPage,
+    startIndex,
+    endIndex
+  } = useTaskPagination({
+    tasks,
+    pageSize
+  });
+
   return (
     <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 animate-fadeIn">
       {/* Tasks Header */}
@@ -33,7 +52,7 @@ export default function TaskList({
         <div>
           <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Tasks</h2>
           <p className="text-gray-600 text-sm mt-1">
-            {totalTasks === 0 ? 'No tasks yet' : `${totalTasks} task${totalTasks !== 1 ? 's' : ''} in total`}
+            {totalTasks === 0 ? 'No tasks yet' : `Showing ${startIndex + 1}-${Math.min(endIndex + 1, totalTasks)} of ${totalTasks} tasks`}
             {totalTasks > 0 && (
               <span className="ml-2 text-xs text-gray-500">
                 ({completedTasks} completed • {pendingTasks} pending)
@@ -42,7 +61,7 @@ export default function TaskList({
           </p>
         </div>
         
-        {/* Add Task Button - This was missing */}
+        {/* Add Task Button */}
         <div className="flex items-center gap-2 sm:gap-3">
           <PrimaryButton
             onClick={onAddTask}
@@ -69,24 +88,36 @@ export default function TaskList({
       {tasks.length === 0 ? (
         <TasksEmptyState onAddTask={onAddTask} />
       ) : (
-        <div className="space-y-3">
-          {tasks.map((task, index) => (
-            <div 
-              key={task._id} 
-              className="animate-fadeInUp"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <TaskItem
-                task={task}
-                onTaskUpdate={onTaskUpdate}
-              />
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="space-y-3">
+            {paginatedTasks.map((task, index) => (
+              <div 
+                key={task._id} 
+                className="animate-fadeInUp"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <TaskItem
+                  task={task}
+                  onTaskUpdate={onTaskUpdate}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Pagination Controls */}
+          <TaskPaginationControls
+            canPrevPage={canPrevPage}
+            canNextPage={canNextPage}
+            prevPage={prevPage}
+            nextPage={nextPage}
+            currentPage={currentPage}
+            totalPages={totalPages}
+          />
+        </>
       )}
 
-      {/* Tasks Summary */}
-      {tasks.length > 0 && (
+      {/* Tasks Summary - Only show if no pagination (single page) */}
+      {tasks.length > 0 && totalPages <= 1 && (
         <div className="mt-6 pt-6 border-t border-gray-200 animate-fadeIn">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm text-gray-600">
             <span className="text-center sm:text-left">

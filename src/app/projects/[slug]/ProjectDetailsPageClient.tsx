@@ -310,6 +310,8 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
   onTaskUpdate={handleTaskUpdate}
   onAddTask={() => setShowAddTaskModal(true)}
   error={error}
+    pageSize={10} // You can customize this per project if needed
+
 />
 
         {/* Add Task Modal */}
