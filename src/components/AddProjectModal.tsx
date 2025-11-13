@@ -61,7 +61,7 @@ export default function AddProjectModal({
         />
 
         <TextAreaField
-          label="Description (Optional)"
+          label="Description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Enter project description"
