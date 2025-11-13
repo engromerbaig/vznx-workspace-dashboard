@@ -17,6 +17,7 @@ import { getProjectStats } from '@/utils/projectStats';
 import { toast } from '@/components/ToastProvider';
 import Loader from '@/components/Loader';
 import TaskList from '@/components/TaskList';
+import { theme } from '@/theme';
 
 interface ProjectDetailsPageClientProps {
   slug: string;
@@ -286,10 +287,9 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
                   <div 
-                    className={`h-2 sm:h-3 rounded-full transition-all duration-500 ease-out`}
+                    className={`h-2 sm:h-3 ${theme.gradients.hero} rounded-full transition-all duration-500 ease-out`}
                     style={{ 
                       width: `${projectStats.progress}%`,
-                      backgroundColor: getProgressColor(projectStats.progress)
                     }}
                   ></div>
                 </div>
