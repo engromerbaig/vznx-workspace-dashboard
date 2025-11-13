@@ -211,13 +211,7 @@ body {
   animation: fadeOut 0.3s ease-in forwards;
 }
 
-.animate-slideInLeft {
-  animation: slideInLeft 0.4s ease-out forwards;
-}
 
-.animate-slideInRight {
-  animation: slideInRight 0.4s ease-out forwards;
-}
 
 .animate-popIn {
   animation: popIn 0.25s ease-out forwards;
@@ -229,4 +223,15 @@ body {
 
 .animate-fadeInUp {
   animation: fadeInUp 0.3s ease-out forwards;
+}
+
+
+
+/* un used */
+.animate-slideInLeft {
+  animation: slideInLeft 0.4s ease-out forwards;
+}
+
+.animate-slideInRight {
+  animation: slideInRight 0.4s ease-out forwards;
 }
