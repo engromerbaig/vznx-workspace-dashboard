@@ -239,7 +239,7 @@ export default function DashboardPageClient() {
         </div>
 
         {/* Recent Projects Section */}
-        <div className="mb-8">
+        <div className="py-8 lg:py-12">
          <SectionHeader
     title="Recent Projects"
     viewAllHref="/projects"
@@ -280,7 +280,7 @@ export default function DashboardPageClient() {
         </div>
 
         {/* Team Members Section */}
-        <div className="mb-8">
+        <div className="py-8 lg:py-12">
          <SectionHeader
     title="Team Members"
     viewAllHref="/team"
