@@ -57,7 +57,7 @@ const Heading = ({
         <div className="relative inline-block w-full">
           <div className={`flex items-center justify-${titleAlign === 'text-center' ? 'center' : titleAlign === 'text-right' ? 'end' : 'start'} gap-3`}>
             {icon && (
-              <div className="text-primary text-2xl">
+              <div className="text-primary text-3xl">
                 {icon}
               </div>
             )}
