@@ -1,3 +1,4 @@
+// components/TaskItem.tsx
 'use client';
 
 import { BaseTask } from '@/types/task';
@@ -19,42 +20,36 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
- const toggleStatus = async () => {
-  if (isUpdating) return;
+  const toggleStatus = async () => {
+    if (isUpdating) return;
 
-  // 1️⃣ Optimistically update the task locally
-  const newStatus = task.status === 'complete' ? 'incomplete' : 'complete';
-  task.status = newStatus; // Directly mutate for instant UI change
-  onTaskUpdate?.(); // Trigger parent refresh or re-render immediately
+    const newStatus = task.status === 'complete' ? 'incomplete' : 'complete';
+    task.status = newStatus;
+    onTaskUpdate?.();
 
-  setIsUpdating(true);
-  try {
-    // 2️⃣ Update status in backend
-    const result = await updateTaskStatus(task._id, newStatus);
-
-    if (!result.success) {
-      // Revert UI if backend fails
+    setIsUpdating(true);
+    try {
+      const result = await updateTaskStatus(task._id, newStatus);
+      if (!result.success) {
+        task.status = newStatus === 'complete' ? 'incomplete' : 'complete';
+        onTaskUpdate?.();
+        toast.error('Failed to update task status');
+      } else {
+        toast.success(`Task marked as ${newStatus}`);
+      }
+    } catch (error) {
       task.status = newStatus === 'complete' ? 'incomplete' : 'complete';
       onTaskUpdate?.();
       toast.error('Failed to update task status');
-    } else {
-      toast.success(`Task marked as ${newStatus}`);
+      console.error('Failed to update task:', error);
+    } finally {
+      setIsUpdating(false);
     }
-  } catch (error) {
-    // Revert UI on error
-    task.status = newStatus === 'complete' ? 'incomplete' : 'complete';
-    onTaskUpdate?.();
-    toast.error('Failed to update task status');
-    console.error('Failed to update task:', error);
-  } finally {
-    setIsUpdating(false);
-  }
-};
-
+  };
 
   const handleDelete = async () => {
-   toast.customConfirm(
-    `Are you sure you want to delete ${task.name}?`,
+    toast.customConfirm(
+      `Are you sure you want to delete ${task.name}?`,
       async () => {
         try {
           setIsDeleting(true);
@@ -76,10 +71,24 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
     setIsExpanded(!isExpanded);
   };
 
+  // Background colors with smooth transitions
+  const getContainerStyles = () => {
+    const baseStyles = "rounded-lg shadow-sm border transition-all duration-500 ease-in-out";
+    
+    if (task.status === 'complete') {
+      return `${baseStyles} border-green-200 bg-gradient-to-r from-green-50 to-green-25 hover:from-green-100 hover:to-green-50`;
+    } else {
+      return `${baseStyles} border-yellow-200 bg-gradient-to-r from-yellow-50 to-yellow-25 hover:from-yellow-100 hover:to-yellow-50`;
+    }
+  };
+
+  const getStatusIconColor = () => {
+    return task.status === 'complete' ? 'text-green-500' : 'text-yellow-500';
+  };
+
   return (
     <div
-      className={`bg-white rounded-lg shadow-sm border transition-all duration-300 
-        ${task.status === 'complete' ? 'border-green-200 bg-green-50' : 'border-gray-200 hover:border-blue-300'} 
+      className={`${getContainerStyles()} 
         ${isUpdating ? 'opacity-50' : ''} 
         ${isDeleting ? 'animate-fadeOut' : 'animate-fadeInUp'}`}
     >
@@ -90,10 +99,10 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
             <button
               onClick={toggleStatus}
               disabled={isUpdating}
-              className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-200 ${
+              className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300 ease-in-out ${
                 task.status === 'complete' 
-                  ? 'bg-green-500 border-green-500 text-white shadow-sm' 
-                  : 'border-gray-300 hover:border-green-500 hover:bg-green-50'
+                  ? 'bg-green-500 border-green-500 text-white shadow-sm hover:bg-green-600 hover:border-green-600' 
+                  : 'border-yellow-400 bg-yellow-50 hover:bg-yellow-100 hover:border-yellow-500'
               } ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             >
               {task.status === 'complete' && <FaCheck className="text-xs" />}
@@ -101,18 +110,17 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
 
             {/* Task Info */}
             <div className="flex-1 cursor-pointer" onClick={toggleExpand}>
-              <div className={`font-medium transition-colors ${
+              <div className={`font-medium transition-all duration-300 ease-in-out ${
                 task.status === 'complete' 
                   ? 'text-gray-500 line-through' 
                   : 'text-gray-800 hover:text-gray-900'
               }`}>
                 {task.name}
               </div>
-              <div className="text-sm text-gray-500 flex items-center gap-2 mt-1">
-                <FaCircle className={`text-xs ${task.status === 'complete' ? 'text-green-500' : 'text-blue-500'}`} />
+              <div className="text-sm text-gray-500 flex items-center gap-2 mt-1 transition-colors duration-300">
+                <FaCircle className={`text-xs ${getStatusIconColor()}`} />
                 <span>Assigned to: <span className="font-medium">{task.assignedTo}</span></span>
                 
-                {/* Show project name if showProject prop is true - FIXED: use task.projectName */}
                 {showProject && task.projectName && (
                   <>
                     <span className="text-gray-300">•</span>
@@ -130,14 +138,14 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
           <div className="flex items-center gap-1">
             <button
               onClick={toggleExpand}
-              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors animate-popIn"
+              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-all duration-200 ease-in-out animate-popIn"
               title="View details"
             >
               <FaEdit className="text-sm" />
             </button>
             <button
               onClick={handleDelete}
-              className="p-2 text-red-400 cursor-pointer hover:text-red-600 hover:bg-red-50 rounded transition-colors animate-popIn"
+              className="p-2 text-red-400 cursor-pointer hover:text-red-600 hover:bg-red-50 rounded transition-all duration-200 ease-in-out animate-popIn"
               title="Delete task"
             >
               <FaTrash className="text-sm" />
@@ -181,18 +189,16 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
                 </div>
               </div>
 
-              {/* Show project in expanded view if showProject is true - FIXED: use task.projectName */}
               {showProject && task.projectName && (
-                <div className="col-span-2 flex items-center gap-2 p-2 bg-purple-50 rounded border border-purple-200">
+                <div className="col-span-2 flex items-center gap-2 p-2 bg-purple-50 rounded border border-purple-200 transition-colors duration-300">
                   <FaProjectDiagram className="text-purple-500 text-xs" />
                   <span className="font-medium text-purple-800">Project:</span>
                   <span className="text-purple-700">{task.projectName}</span>
                 </div>
               )}
 
-              {/* Completion Info */}
               {task.completedAt && (
-                <div className="col-span-2 flex items-center gap-2 p-2 bg-green-50 rounded border border-green-200">
+                <div className="col-span-2 flex items-center gap-2 p-2 bg-green-50 rounded border border-green-200 transition-colors duration-300">
                   <FaCheck className="text-green-500 text-xs" />
                   <span className="font-medium text-green-800">Completed on:</span>
                   <span className="text-green-700" title={formatDateTime(task.completedAt, { includeTime: true })}>

@@ -16,8 +16,7 @@ import { getProgressColor, getProgressMessage } from '@/utils/projectProgress';
 import { getProjectStats } from '@/utils/projectStats';
 import { toast } from '@/components/ToastProvider';
 import Loader from '@/components/Loader';
-import { TasksEmptyState } from '@/components/empty-states/TasksEmptyState';
-
+import TaskList from '@/components/TaskList';
 
 interface ProjectDetailsPageClientProps {
   slug: string;
@@ -303,79 +302,15 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
         </div>
 
         {/* Tasks Section */}
-        <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-          {/* Tasks Header */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">Tasks</h2>
-              <p className="text-gray-600 text-sm mt-1">
-                {projectStats.totalTasks === 0 ? 'No tasks yet' : `${projectStats.totalTasks} task${projectStats.totalTasks !== 1 ? 's' : ''} in total`}
-                {projectStats.totalTasks > 0 && (
-                  <span className="ml-2 text-xs text-gray-500">
-                    ({projectStats.completedTasks} completed • {projectStats.pendingTasks} pending)
-                  </span>
-                )}
-              </p>
-            </div>
-            <div className="flex items-center gap-2 sm:gap-3">
-              <PrimaryButton
-                onClick={() => setShowAddTaskModal(true)}
-                showIcon={true}
-                icon={FaPlus}
-              >
-                <span className="hidden sm:inline">Add Task</span>
-                <span className="sm:hidden">Add</span>
-              </PrimaryButton>
-            </div>
-          </div>
-
-          {/* Error Alert */}
-          {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <div className="flex items-center gap-2 text-red-800">
-                <FaCircle className="text-xs" />
-                <span className="text-sm font-medium">{error}</span>
-              </div>
-            </div>
-          )}
-
-          {/* Tasks List */}
-          {tasks.length === 0 ? (
-            <TasksEmptyState onAddTask={() => setShowAddTaskModal(true)} />
-            
-          ) : (
-            <div className="space-y-3">
-              {tasks.map(task => (
-                <TaskItem
-                  key={task._id}
-                  task={task}
-                  onTaskUpdate={handleTaskUpdate}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Tasks Summary */}
-          {tasks.length > 0 && (
-            <div className="mt-6 pt-6 border-t border-gray-200">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 text-sm text-gray-600">
-                <span className="text-center sm:text-left">
-                  Showing {tasks.length} task{tasks.length !== 1 ? 's' : ''}
-                </span>
-                <div className="flex items-center justify-center sm:justify-start gap-4">
-                  <span className="flex items-center gap-1">
-                    <FaCheck className="text-green-500 text-xs" />
-                    {projectStats.completedTasks} completed
-                  </span>
-                  <span className="flex items-center gap-1">
-                    <FaCircle className="text-primary/80 text-xs" />
-                    {projectStats.pendingTasks} pending
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
+     <TaskList
+  tasks={tasks}
+  totalTasks={projectStats.totalTasks}
+  completedTasks={projectStats.completedTasks}
+  pendingTasks={projectStats.pendingTasks}
+  onTaskUpdate={handleTaskUpdate}
+  onAddTask={() => setShowAddTaskModal(true)}
+  error={error}
+/>
 
         {/* Add Task Modal */}
         <AddTaskModal
