@@ -17,7 +17,9 @@ interface TaskListProps {
   onTaskUpdate: () => void;
   onAddTask: () => void;
   error?: string | null;
-  pageSize?: number; // Add pageSize prop
+  pageSize?: number;
+  showAddTask?: boolean;
+  showProject?: boolean; // New explicit prop for project visibility
 }
 
 export default function TaskList({
@@ -28,7 +30,9 @@ export default function TaskList({
   onTaskUpdate,
   onAddTask,
   error,
-  pageSize = 10 // Default page size
+  pageSize = 10,
+  showAddTask = true,
+  showProject = false // Default to false for project details page
 }: TaskListProps) {
   const {
     paginatedTasks,
@@ -61,17 +65,19 @@ export default function TaskList({
           </p>
         </div>
         
-        {/* Add Task Button */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          <PrimaryButton
-            onClick={onAddTask}
-            showIcon={true}
-            icon={FaPlus}
-          >
-            <span className="hidden sm:inline">Add Task</span>
-            <span className="sm:hidden">Add</span>
-          </PrimaryButton>
-        </div>
+        {/* Add Task Button - Conditionally rendered */}
+        {showAddTask && (
+          <div className="flex items-center gap-2 sm:gap-3">
+            <PrimaryButton
+              onClick={onAddTask}
+              showIcon={true}
+              icon={FaPlus}
+            >
+              <span className="hidden sm:inline">Add Task</span>
+              <span className="sm:hidden">Add</span>
+            </PrimaryButton>
+          </div>
+        )}
       </div>
 
       {/* Error Alert */}
@@ -99,6 +105,7 @@ export default function TaskList({
                 <TaskItem
                   task={task}
                   onTaskUpdate={onTaskUpdate}
+                  showProject={showProject} // Use the explicit prop
                 />
               </div>
             ))}

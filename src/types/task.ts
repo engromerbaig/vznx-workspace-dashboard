@@ -11,6 +11,7 @@ export interface BaseTask {
   createdAt: string;
   updatedAt: string;
     projectName?: string; // Add this optional field
+    projectSlug?: string;
 }
 
 export interface CreateTaskData {

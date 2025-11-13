@@ -2,13 +2,15 @@
 'use client';
 
 import { BaseTask } from '@/types/task';
-import { FaTrash, FaCheck, FaCircle, FaUser, FaClock, FaEdit, FaProjectDiagram } from 'react-icons/fa';
+import { FaTrash, FaCheck, FaCircle, FaUser, FaClock, FaEdit, FaProjectDiagram, FaExternalLinkAlt } from 'react-icons/fa';
 import { FaCalendar } from 'react-icons/fa';
 import { formatDateTime } from '@/utils/dateFormatter';
 import { useState } from 'react';
 import { updateTaskStatus, deleteTask } from '@/lib/actions/taskActions';
 import { toast } from '@/components/ToastProvider';
 import { getTaskStatusColors } from '@/utils/taskStatus';
+import Link from 'next/link';
+import { slugify } from '@/utils/slugify';
 
 interface TaskItemProps {
   task: BaseTask;
@@ -22,6 +24,19 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
   const [isDeleting, setIsDeleting] = useState(false);
 
   const taskStatusColors = getTaskStatusColors(task.status as 'complete' | 'incomplete');
+
+  // Generate project slug from project name if not provided
+  const getProjectSlug = () => {
+    if (task.projectSlug) {
+      return task.projectSlug;
+    }
+    if (task.projectName) {
+      return slugify(task.projectName);
+    }
+    return null;
+  };
+
+  const projectSlug = getProjectSlug();
 
   const toggleStatus = async () => {
     if (isUpdating) return;
@@ -107,10 +122,22 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
                 {showProject && task.projectName && (
                   <>
                     <span className="text-gray-300">•</span>
-                    <span className="flex items-center gap-1">
-                      <FaProjectDiagram className="text-xs text-purple-500" />
-                      <span className="font-medium text-purple-600">{task.projectName}</span>
-                    </span>
+                    {projectSlug ? (
+                      <Link 
+                        href={`/projects/${projectSlug}`}
+                        className="flex items-center gap-1 text-purple-600 hover:text-purple-800 transition-colors group"
+                        onClick={(e) => e.stopPropagation()} // Prevent expanding task when clicking link
+                      >
+                        <FaProjectDiagram className="text-xs text-purple-500" />
+                        <span className="font-medium group-hover:underline">{task.projectName}</span>
+                        <FaExternalLinkAlt className="text-xs opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </Link>
+                    ) : (
+                      <span className="flex items-center gap-1 text-purple-600">
+                        <FaProjectDiagram className="text-xs text-purple-500" />
+                        <span className="font-medium">{task.projectName}</span>
+                      </span>
+                    )}
                   </>
                 )}
               </div>
@@ -173,23 +200,32 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
               </div>
 
               {showProject && task.projectName && (
-                <div className="col-span-2 flex items-center gap-2 p-2 bg-purple-50 rounded border border-purple-200 transition-colors duration-300">
+                <div className="col-span-2 flex items-center gap-2 p-2 bg-purple-50 rounded border border-purple-200 transition-colors duration-300 group">
                   <FaProjectDiagram className="text-purple-500 text-xs" />
                   <span className="font-medium text-purple-800">Project:</span>
-                  <span className="text-purple-700">{task.projectName}</span>
+                  {projectSlug ? (
+                    <Link 
+                      href={`/projects/${projectSlug}`}
+                      className="flex items-center gap-1 text-purple-700 hover:text-purple-900 transition-colors group-hover:underline"
+                    >
+                      <span>{task.projectName}</span>
+                      <FaExternalLinkAlt className="text-xs opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </Link>
+                  ) : (
+                    <span className="text-purple-700">{task.projectName}</span>
+                  )}
                 </div>
               )}
 
-              
-{task.completedAt && (
-  <div className="col-span-2 flex items-center gap-2 p-3 bg-green-200 rounded-lg border-2 border-green-300 transition-colors duration-300 shadow-sm">
-    <FaCheck className="text-green-700 text-sm" />
-    <span className="font-bold text-green-900">Completed on:</span>
-    <span className="text-green-800 font-semibold" title={formatDateTime(task.completedAt, { includeTime: true })}>
-      {formatDateTime(task.completedAt)}
-    </span>
-  </div>
-)}
+              {task.completedAt && (
+                <div className="col-span-2 flex items-center gap-2 p-3 bg-green-200 rounded-lg border-2 border-green-300 transition-colors duration-300 shadow-sm">
+                  <FaCheck className="text-green-700 text-sm" />
+                  <span className="font-bold text-green-900">Completed on:</span>
+                  <span className="text-green-800 font-semibold" title={formatDateTime(task.completedAt, { includeTime: true })}>
+                    {formatDateTime(task.completedAt)}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         )}
