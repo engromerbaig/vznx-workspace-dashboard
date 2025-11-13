@@ -180,11 +180,12 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
                 </div>
               )}
 
- {task.completedAt && (
-  <div className="col-span-2 flex items-center justify-start gap-2 p-2 bg-green-200 rounded-full border border-green-300 transition-colors duration-300">
-    <FaCheck className="text-green-700 text-xs" />
-    <span className="font-bold text-green-900 text-sm">Completed:</span>
-    <span className="text-green-800 font-semibold text-sm" title={formatDateTime(task.completedAt, { includeTime: true })}>
+              
+{task.completedAt && (
+  <div className="col-span-2 flex items-center gap-2 p-3 bg-green-200 rounded-lg border-2 border-green-300 transition-colors duration-300 shadow-sm">
+    <FaCheck className="text-green-700 text-sm" />
+    <span className="font-bold text-green-900">Completed on:</span>
+    <span className="text-green-800 font-semibold" title={formatDateTime(task.completedAt, { includeTime: true })}>
       {formatDateTime(task.completedAt)}
     </span>
   </div>
