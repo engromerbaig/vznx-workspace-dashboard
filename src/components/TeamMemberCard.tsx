@@ -107,7 +107,7 @@ export default function TeamMemberCard({
         {/* Header with Role */}
         <div className="flex justify-between items-start mb-4">
           <div className="flex-1 pr-3">
-            <h3 className="text-xl font-bold text-gray-800 group-hover:text-gray-900 transition-colors line-clamp-2 leading-tight animate-popIn">
+            <h3 className="text-xl uppercase font-bold text-gray-800 group-hover:text-gray-900 transition-colors line-clamp-2 leading-tight animate-popIn">
               {member.name}
             </h3>
             <div className="flex items-center gap-2 mt-2 animate-fadeIn">
