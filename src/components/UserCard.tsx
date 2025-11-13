@@ -2,6 +2,7 @@
 
 import { FaCircle, FaUser, FaEnvelope, FaUserTag } from 'react-icons/fa';
 import { RiAdminLine } from "react-icons/ri";
+import { theme } from '@/theme';
 
 
 interface UserCardProps {
@@ -46,7 +47,7 @@ const UserCard = ({
         
         {/* User Avatar - Circular */}
         <div className="relative">
-          <div className="w-20 h-20 bg-gradient-to-br from-purple-600 to-blue-500 rounded-full flex items-center justify-center shadow-lg">
+          <div className={`w-20 h-20 ${theme.gradients.hero} rounded-full flex items-center justify-center shadow-lg`}>
             <FaUser className="text-white text-2xl" />
           </div>
           
