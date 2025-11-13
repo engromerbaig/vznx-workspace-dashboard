@@ -35,15 +35,15 @@ body {
 
 /* scrollbar */
        .custom-scrollbar::-webkit-scrollbar {
-          width: 5px;
+          width: 2px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
           background: #f1f1f1;
-          border-radius: 3px;
+          border-radius: 2px;
         }
       .custom-scrollbar::-webkit-scrollbar-thumb {
   background: theme('colors.primary'); /* uses Tailwind theme color */
-  border-radius: 3px;
+  border-radius: 2px;
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: theme('colors.primary');
