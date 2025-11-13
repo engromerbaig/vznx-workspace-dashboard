@@ -21,7 +21,7 @@ interface TeamContextType {
   availableMembers: TeamMember[];
   loading: boolean;
   error: string | null;
-  refresh: () => Promise<void>;
+  refresh: () => Promise<void>; // ← MUST BE HERE
 }
 
 const TeamContext = createContext<TeamContextType | undefined>(undefined);
@@ -35,7 +35,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/team?limit=100'); // large limit to get all
+      const res = await fetch('/api/team?limit=100');
       const data = await res.json();
 
       if (data.status === 'success') {
@@ -44,13 +44,14 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         setError(data.message || 'Failed to load team');
       }
     } catch (err) {
-      setError('Network error');
-      console.error(err);
+        setError('Network error');
+        console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
+  // Initial load
   useEffect(() => {
     fetchTeam();
   }, []);
@@ -64,7 +65,7 @@ export function TeamProvider({ children }: { children: ReactNode }) {
         availableMembers,
         loading,
         error,
-        refresh: fetchTeam,
+        refresh: fetchTeam, // ← expose refresh
       }}
     >
       {children}
@@ -74,8 +75,6 @@ export function TeamProvider({ children }: { children: ReactNode }) {
 
 export function useTeam() {
   const context = useContext(TeamContext);
-  if (!context) {
-    throw new Error('useTeam must be used within TeamProvider');
-  }
+  if (!context) throw new Error('useTeam must be used within TeamProvider');
   return context;
 }

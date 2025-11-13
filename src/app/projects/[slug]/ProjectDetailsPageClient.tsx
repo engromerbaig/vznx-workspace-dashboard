@@ -1,3 +1,4 @@
+// src/app/projects/[slug]/page-client.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -8,7 +9,7 @@ import TaskItem from '@/components/TaskItem';
 import AddTaskModal from '@/components/AddTaskModal';
 import ProgressCard from '@/components/ProgressCard';
 import PrimaryButton from '@/components/PrimaryButton';
-import { FaPlus, FaArrowLeft, FaSync, FaTasks, FaCheck, FaClock, FaChartLine, FaCircle } from 'react-icons/fa';
+import { FaPlus, FaArrowLeft, FaSync, FaTasks, FaCheck, FaClock, FaChartLine } from 'react-icons/fa';
 import { createTask } from '@/lib/actions/taskActions';
 import { formatDateTime, formatTime } from '@/utils/dateFormatter';
 import { getStatusColors, formatStatusText } from '@/utils/projectStatus';
@@ -17,6 +18,7 @@ import { getProjectStats } from '@/utils/projectStats';
 import { toast } from '@/components/ToastProvider';
 import SkeletonLoader from '@/components/SkeletonLoader';
 import TaskList from '@/components/TaskList';
+import { useTeam } from '@/context/TeamContext'; // ← ADD THIS
 
 interface ProjectDetailsPageClientProps {
   slug: string;
@@ -33,6 +35,9 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [error, setError] = useState<string | null>(null);
+
+  // GET refresh() FROM TeamContext
+  const { refresh: refreshTeam } = useTeam();
 
   // Fetch project and tasks
   const fetchProjectData = async () => {
@@ -74,7 +79,7 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
     if (projectSlug) fetchProjectData();
   }, [projectSlug]);
 
-  // Add new task
+  // ADD TASK → REFRESH PROJECT + TEAM (real-time capacity)
   const handleAddTask = async (taskData: { name: string; assignedTo: string }) => {
     if (!project) return;
     try {
@@ -82,7 +87,12 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
       if (result.success) {
         toast.success('Task added successfully');
         setShowAddTaskModal(false);
+
+        // 1. Refresh project + tasks
         await fetchProjectData();
+
+        // 2. Refresh team capacity → dropdown updates instantly
+        await refreshTeam();
       } else {
         throw new Error(result.error || 'Failed to create task');
       }
@@ -91,24 +101,23 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
     }
   };
 
+  // REFRESH BUTTON → sync both project & team
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchProjectData();
+    await refreshTeam(); // ← sync team too
     setIsRefreshing(false);
   };
 
   const handleTaskUpdate = () => fetchProjectData();
 
-  // Initial Loading State
+  // === LOADING STATE ===
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto">
-          {/* Back button skeleton */}
           <div className="mb-6 sm:mb-8">
             <SkeletonLoader width="w-32" height="h-6" className="mb-4" />
-            
-            {/* Project header skeleton */}
             <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
                 <div className="flex-1 space-y-3">
@@ -124,8 +133,6 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
                   <SkeletonLoader width="w-20" height="h-6" className="rounded-full" />
                 </div>
               </div>
-              
-              {/* Progress stats skeleton */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6">
                 {[1, 2, 3, 4].map(i => (
                   <div key={i} className="bg-gray-50 rounded-lg p-4 flex flex-col items-center">
@@ -134,8 +141,6 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
                   </div>
                 ))}
               </div>
-
-              {/* Progress bar skeleton */}
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <SkeletonLoader width="w-32" height="h-4" />
@@ -147,7 +152,6 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
             </div>
           </div>
 
-          {/* Tasks header skeleton */}
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <SkeletonLoader width="w-40" height="h-7" />
             <div className="flex gap-3 self-end sm:self-auto">
@@ -156,7 +160,6 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
             </div>
           </div>
 
-          {/* Tasks list skeleton */}
           <div className="space-y-3">
             {[1, 2, 3, 4].map(i => (
               <div key={i} className="bg-white rounded-lg shadow-sm p-4">
@@ -178,16 +181,20 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
     );
   }
 
-  // Error State
+  // === ERROR STATE ===
   if (error && !project) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto text-center">
           <div className="bg-white rounded-lg shadow-md p-8 max-w-md mx-auto">
-            <div className="text-red-500 text-6xl mb-4">❌</div>
+            <div className="text-red-500 text-6xl mb-4">Failed</div>
             <h1 className="text-2xl font-bold text-gray-800 mb-4">Project Not Found</h1>
             <p className="text-gray-600 mb-6">{error}</p>
-            <PrimaryButton className='cursor-pointer' bgColor='bg-primary/10' onClick={() => router.push('/projects')}>
+            <PrimaryButton
+              className='cursor-pointer'
+              bgColor='bg-primary/10'
+              onClick={() => router.push('/projects')}
+            >
               Back to Projects
             </PrimaryButton>
           </div>
@@ -203,7 +210,11 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
           <div className="bg-white rounded-lg shadow-md p-8 max-w-md mx-auto">
             <h1 className="text-2xl font-bold text-gray-800 mb-4">Project Not Found</h1>
             <p className="text-gray-600 mb-6">The project you're looking for doesn't exist or you don't have access to it.</p>
-            <PrimaryButton className='cursor-pointer' bgColor='bg-primary/10' onClick={() => router.push('/projects')}>
+            <PrimaryButton
+              className='cursor-pointer'
+              bgColor='bg-primary/10'
+              onClick={() => router.push('/projects')}
+            >
               Back to Projects
             </PrimaryButton>
           </div>
@@ -227,7 +238,7 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
             <FaArrowLeft className='text-sm' />
             Back to Projects
           </button>
-          
+
           <div className="flex items-center gap-4">
             <div className="text-xs text-gray-500 hidden sm:block">
               Last synced: {formatTime(lastUpdated)}
@@ -245,7 +256,7 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
             </button>
           </div>
         </div>
-        
+
         {/* Project Info Card */}
         <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
@@ -273,32 +284,12 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
             </div>
           </div>
 
-          {/* Progress Overview using ProgressCard */}
+          {/* Progress Overview */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center mb-6">
-            <ProgressCard
-              title="Total Tasks"
-              value={projectStats.totalTasks}
-              icon={<FaTasks />}
-              color="gray"
-            />
-            <ProgressCard
-              title="Completed"
-              value={projectStats.completedTasks}
-              icon={<FaCheck />}
-              color="green"
-            />
-            <ProgressCard
-              title="Pending"
-              value={projectStats.pendingTasks}
-              icon={<FaClock />}
-              color="blue"
-            />
-            <ProgressCard
-              title="Progress"
-              value={`${projectStats.progress}%`}
-              icon={<FaChartLine />}
-              color="orange"
-            />
+            <ProgressCard title="Total Tasks" value={projectStats.totalTasks} icon={<FaTasks />} color="gray" />
+            <ProgressCard title="Completed" value={projectStats.completedTasks} icon={<FaCheck />} color="green" />
+            <ProgressCard title="Pending" value={projectStats.pendingTasks} icon={<FaClock />} color="blue" />
+            <ProgressCard title="Progress" value={`${projectStats.progress}%`} icon={<FaChartLine />} color="orange" />
           </div>
 
           {/* Progress Bar */}
@@ -309,11 +300,11 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
                 <span className="text-sm font-bold text-gray-800">{projectStats.progress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
-                <div 
-                  className={`h-2 sm:h-3 rounded-full transition-all duration-500 ease-out`}
-                  style={{ 
+                <div
+                  className="h-2 sm:h-3 rounded-full transition-all duration-500 ease-out"
+                  style={{
                     width: `${projectStats.progress}%`,
-                    backgroundColor: getProgressColor(projectStats.progress)
+                    backgroundColor: getProgressColor(projectStats.progress),
                   }}
                 ></div>
               </div>

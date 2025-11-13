@@ -10,7 +10,7 @@ import { useTeam } from '@/context/TeamContext';
 interface AddTaskModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (taskData: { name: string; assignedTo: string }) => void;
+  onSubmit: (taskData: { name: string; assignedTo: string }) => Promise<void>;
 }
 
 export default function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModalProps) {
@@ -18,7 +18,7 @@ export default function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModal
   const [assignedTo, setAssignedTo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { availableMembers, loading: loadingMembers } = useTeam();
+  const { availableMembers, loading: loadingMembers, refresh } = useTeam();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,13 +26,22 @@ export default function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModal
 
     setIsSubmitting(true);
     try {
+      // 1. Submit task
       await onSubmit({
         name: name.trim(),
         assignedTo,
       });
+
+      // 2. REFRESH TEAM DATA IMMEDIATELY
+      await refresh();
+
+      // 3. Reset form & close
       setName('');
       setAssignedTo('');
       onClose();
+    } catch (error) {
+      console.error('Failed to add task:', error);
+      // Optionally show toast
     } finally {
       setIsSubmitting(false);
     }
@@ -56,7 +65,7 @@ export default function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModal
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Enter task name"
-          disabled={isSubmitting}
+          disabled={isSubmitting || loadingMembers}
         />
 
         <div>
@@ -70,7 +79,7 @@ export default function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModal
           >
             <option value="">Select team member</option>
             {loadingMembers ? (
-              <option value="" disabled>Loading...</option>
+              <option value="" disabled>Refreshing members...</option>
             ) : availableMembers.length === 0 ? (
               <option value="" disabled>No available members (all at capacity)</option>
             ) : (
@@ -90,13 +99,24 @@ export default function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModal
         </div>
 
         <div className="flex gap-3 pt-4">
-          <PrimaryButton type="button" onClick={handleClose} disabled={isSubmitting} className="flex-1">
+          <PrimaryButton
+            type="button"
+            onClick={handleClose}
+            disabled={isSubmitting || loadingMembers}
+            className="flex-1"
+          >
             Cancel
           </PrimaryButton>
 
           <PrimaryButton
             type="submit"
-            disabled={!name.trim() || !assignedTo || isSubmitting || availableMembers.length === 0}
+            disabled={
+              !name.trim() ||
+              !assignedTo ||
+              isSubmitting ||
+              loadingMembers ||
+              availableMembers.length === 0
+            }
             isLoading={isSubmitting}
             loadingText="Adding..."
             className="flex-1"
