@@ -1,31 +1,31 @@
-// app/api/projects/route.ts
+// app/api/projects/route.js
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { slugify, generateUniqueSlug } from '@/utils/slugify';
 
 // Helper function to build filter query (shared across endpoints)
-export function buildProjectFilterQuery(searchParams: URLSearchParams) {
+function buildProjectFilterQuery(searchParams) {
   const search = searchParams.get('search') || '';
   const status = searchParams.get('status') || 'all';
   const startDate = searchParams.get('startDate') || '';
   const endDate = searchParams.get('endDate') || '';
 
-  let filterQuery: any = {};
-  
+  let filterQuery = {};
+
   // Status filter
   if (status !== 'all') {
     filterQuery.status = status;
   }
-  
-  // Search filter
+
+  // Search filter (name or description)
   if (search) {
     filterQuery.$or = [
       { name: { $regex: search, $options: 'i' } },
       { description: { $regex: search, $options: 'i' } }
     ];
   }
-  
-  // Date range filter
+
+  // Date range filter on createdAt
   if (startDate || endDate) {
     filterQuery.createdAt = {};
     if (startDate) {
@@ -39,21 +39,21 @@ export function buildProjectFilterQuery(searchParams: URLSearchParams) {
   return filterQuery;
 }
 
-export async function GET(request: Request) {
+export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '6');
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '6', 10);
     const sortBy = searchParams.get('sortBy') || 'recent';
 
     const db = await getDatabase();
     const skip = (page - 1) * limit;
 
-    // Build filter query using shared helper
+    // Build filter query
     const filterQuery = buildProjectFilterQuery(searchParams);
 
     // Build sort options
-    let sortOptions: any = {};
+    let sortOptions = {};
     switch (sortBy) {
       case 'recent':
         sortOptions = { createdAt: -1 };
@@ -80,7 +80,7 @@ export async function GET(request: Request) {
     // Get total count for pagination
     const totalProjects = await db.collection('projects').countDocuments(filterQuery);
 
-    // Fetch projects with filters
+    // Fetch projects with filters, sorting, and pagination
     const projects = await db
       .collection('projects')
       .find(filterQuery)
@@ -103,20 +103,20 @@ export async function GET(request: Request) {
       }
     });
   } catch (error) {
-    console.error('❌ Failed to fetch projects:', error);
-    return NextResponse.json({ 
-      status: 'error', 
-      message: 'Failed to fetch projects' 
-    }, { status: 500 });
+    console.error('Failed to fetch projects:', error);
+    return NextResponse.json(
+      { status: 'error', message: 'Failed to fetch projects' },
+      { status: 500 }
+    );
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request) {
   try {
     const body = await request.json();
     const { name, description } = body;
 
-    if (!name) {
+    if (!name || name.trim() === '') {
       return NextResponse.json(
         { status: 'error', message: 'Project name is required' },
         { status: 400 }
@@ -128,22 +128,20 @@ export async function POST(request: Request) {
     // Generate base slug from project name
     const baseSlug = slugify(name);
 
-    // Check for existing slugs with the same base
-    const existingProjects = await db.collection('projects')
-      .find({ 
-        slug: { $regex: `^${baseSlug}` } 
-      })
+    // Find all existing slugs that start with the base slug
+    const existingProjects = await db
+      .collection('projects')
+      .find({ slug: { $regex: `^${baseSlug}` } })
       .project({ slug: 1 })
       .toArray();
 
-    // Extract existing slugs
     const existingSlugs = existingProjects.map(p => p.slug);
 
-    // Generate unique slug
+    // Generate a unique slug
     const uniqueSlug = generateUniqueSlug(baseSlug, existingSlugs);
 
     const newProject = {
-      name,
+      name: name.trim(),
       slug: uniqueSlug,
       description: description || '',
       status: 'planning',
@@ -167,7 +165,7 @@ export async function POST(request: Request) {
       }
     });
   } catch (error) {
-    console.error('❌ Failed to create project:', error);
+    console.error('Failed to create project:', error);
     return NextResponse.json(
       { status: 'error', message: 'Failed to create project' },
       { status: 500 }
