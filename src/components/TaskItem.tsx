@@ -8,6 +8,7 @@ import { formatDateTime } from '@/utils/dateFormatter';
 import { useState } from 'react';
 import { updateTaskStatus, deleteTask } from '@/lib/actions/taskActions';
 import { toast } from '@/components/ToastProvider';
+import { getTaskStatusColors } from '@/utils/taskStatus';
 
 interface TaskItemProps {
   task: BaseTask;
@@ -19,6 +20,8 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
   const [isExpanded, setIsExpanded] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  const taskStatusColors = getTaskStatusColors(task.status as 'complete' | 'incomplete');
 
   const toggleStatus = async () => {
     if (isUpdating) return;
@@ -71,24 +74,10 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
     setIsExpanded(!isExpanded);
   };
 
-  // Background colors with smooth transitions
-  const getContainerStyles = () => {
-    const baseStyles = "rounded-lg shadow-sm border transition-all duration-500 ease-in-out";
-    
-    if (task.status === 'complete') {
-      return `${baseStyles} border-green-200 bg-gradient-to-r from-green-50 to-green-25 hover:from-green-100 hover:to-green-50`;
-    } else {
-      return `${baseStyles} border-yellow-200 bg-gradient-to-r from-yellow-50 to-yellow-25 hover:from-yellow-100 hover:to-yellow-50`;
-    }
-  };
-
-  const getStatusIconColor = () => {
-    return task.status === 'complete' ? 'text-green-500' : 'text-yellow-500';
-  };
-
   return (
     <div
-      className={`${getContainerStyles()} 
+      className={`rounded-lg shadow-sm border transition-all duration-500 ease-in-out 
+        ${taskStatusColors.container} ${taskStatusColors.border} ${taskStatusColors.containerHover}
         ${isUpdating ? 'opacity-50' : ''} 
         ${isDeleting ? 'animate-fadeOut' : 'animate-fadeInUp'}`}
     >
@@ -99,26 +88,20 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
             <button
               onClick={toggleStatus}
               disabled={isUpdating}
-              className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300 ease-in-out ${
-                task.status === 'complete' 
-                  ? 'bg-green-500 border-green-500 text-white shadow-sm hover:bg-green-600 hover:border-green-600' 
-                  : 'border-yellow-400 bg-yellow-50 hover:bg-yellow-100 hover:border-yellow-500'
-              } ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+              className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300 ease-in-out 
+                ${taskStatusColors.checkbox} ${taskStatusColors.checkboxHover}
+                ${isUpdating ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             >
               {task.status === 'complete' && <FaCheck className="text-xs" />}
             </button>
 
             {/* Task Info */}
             <div className="flex-1 cursor-pointer" onClick={toggleExpand}>
-              <div className={`font-medium transition-all duration-300 ease-in-out ${
-                task.status === 'complete' 
-                  ? 'text-gray-500 line-through' 
-                  : 'text-gray-800 hover:text-gray-900'
-              }`}>
+              <div className={`font-medium transition-all duration-300 ease-in-out ${taskStatusColors.text} hover:text-gray-900`}>
                 {task.name}
               </div>
               <div className="text-sm text-gray-500 flex items-center gap-2 mt-1 transition-colors duration-300">
-                <FaCircle className={`text-xs ${getStatusIconColor()}`} />
+                <FaCircle className={`text-xs ${taskStatusColors.icon}`} />
                 <span>Assigned to: <span className="font-medium">{task.assignedTo}</span></span>
                 
                 {showProject && task.projectName && (
@@ -197,15 +180,15 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
                 </div>
               )}
 
-              {task.completedAt && (
-                <div className="col-span-2 flex items-center gap-2 p-2 bg-green-50 rounded border border-green-200 transition-colors duration-300">
-                  <FaCheck className="text-green-500 text-xs" />
-                  <span className="font-medium text-green-800">Completed on:</span>
-                  <span className="text-green-700" title={formatDateTime(task.completedAt, { includeTime: true })}>
-                    {formatDateTime(task.completedAt)}
-                  </span>
-                </div>
-              )}
+ {task.completedAt && (
+  <div className="col-span-2 flex items-center justify-start gap-2 p-2 bg-green-200 rounded-full border border-green-300 transition-colors duration-300">
+    <FaCheck className="text-green-700 text-xs" />
+    <span className="font-bold text-green-900 text-sm">Completed:</span>
+    <span className="text-green-800 font-semibold text-sm" title={formatDateTime(task.completedAt, { includeTime: true })}>
+      {formatDateTime(task.completedAt)}
+    </span>
+  </div>
+)}
             </div>
           </div>
         )}
