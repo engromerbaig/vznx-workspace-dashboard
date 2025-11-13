@@ -1,4 +1,4 @@
-// app/layout.tsx (updated)
+// app/layout.tsx
 import type { Metadata } from 'next';
 import { Poppins } from 'next/font/google';
 import './globals.css';
@@ -10,6 +10,7 @@ import ToastProvider from '@/components/ToastProvider';
 import AuthProviderWrapper from '@/components/AuthProviderWrapper';
 import { LogoutProvider } from '@/context/LogoutContext';
 import GlobalLogoutLoader from '@/components/GlobalLogoutLoader';
+import { TeamProvider } from '@/context/TeamContext'; // ← ADD THIS
 
 // Initialize Poppins font
 const poppins = Poppins({
@@ -42,11 +43,15 @@ export default function RootLayout({
           <LogoutProvider>
             <AuthProviderWrapper>
               <GlobalLogoutLoader />
-              <Navbar />
-              <ClientLayout>
-                <ToastProvider />
-                {children}
-              </ClientLayout>
+
+              {/* Wrap TeamProvider here so all children can use useTeam() */}
+              <TeamProvider>
+                <Navbar />
+                <ClientLayout>
+                  <ToastProvider />
+                  {children}
+                </ClientLayout>
+              </TeamProvider>
             </AuthProviderWrapper>
           </LogoutProvider>
         </UserProvider>

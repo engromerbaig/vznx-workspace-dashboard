@@ -1,14 +1,21 @@
+// src/components/AddTeamMemberModal.tsx
 'use client';
 
 import { useState, useEffect } from 'react';
 import Modal from '@/components/Modal';
 import PrimaryButton from '@/components/PrimaryButton';
 import InputField from '@/components/InputField';
+import { TeamMemberRole, DEFAULT_ROLES } from '@/types/team'; // ← from types/team.ts
 
 interface AddTeamMemberModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (memberData: { name: string; email: string; role: string; maxCapacity?: number }) => void;
+  onSubmit: (memberData: {
+    name: string;
+    email: string;
+    role: TeamMemberRole;
+    maxCapacity?: number;
+  }) => void;
   defaultMaxCapacity?: number;
 }
 
@@ -20,42 +27,42 @@ export default function AddTeamMemberModal({
 }: AddTeamMemberModalProps) {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [role, setRole] = useState('');
+  const [role, setRole] = useState<TeamMemberRole | ''>('');
   const [maxCapacity, setMaxCapacity] = useState(defaultMaxCapacity.toString());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Update maxCapacity when defaultMaxCapacity changes
   useEffect(() => {
     setMaxCapacity(defaultMaxCapacity.toString());
   }, [defaultMaxCapacity]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) return;
+    if (!name.trim() || !email.trim() || !role) return;
 
     setIsSubmitting(true);
     try {
       await onSubmit({
         name: name.trim(),
         email: email.trim(),
-        role: role.trim() || 'Team Member',
+        role: role as TeamMemberRole,
         maxCapacity: parseInt(maxCapacity) || defaultMaxCapacity,
       });
-      setName('');
-      setEmail('');
-      setRole('');
-      setMaxCapacity(defaultMaxCapacity.toString());
+      resetForm();
       onClose();
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleCancel = () => {
+  const resetForm = () => {
     setName('');
     setEmail('');
     setRole('');
     setMaxCapacity(defaultMaxCapacity.toString());
+  };
+
+  const handleCancel = () => {
+    resetForm();
     onClose();
   };
 
@@ -84,14 +91,23 @@ export default function AddTeamMemberModal({
           disabled={isSubmitting}
         />
 
-        <InputField
-          label="Role"
-          type="text"
-          value={role}
-          onChange={(e) => setRole(e.target.value)}
-          placeholder="e.g., Project Manager, Developer, Designer"
-          disabled={isSubmitting}
-        />
+        <div>
+          <label className="block text-sm font-medium mb-2">Role</label>
+          <select
+            value={role}
+            onChange={(e) => setRole(e.target.value as TeamMemberRole)}
+            required
+            disabled={isSubmitting}
+            className="w-full px-3 py-2 border border-gray-600 rounded-md bg-neutral-900 text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-700 disabled:cursor-not-allowed"
+          >
+            <option value="">Select a role</option>
+            {DEFAULT_ROLES.map((roleName) => (
+              <option key={roleName} value={roleName}>
+                {roleName}
+              </option>
+            ))}
+          </select>
+        </div>
 
         <InputField
           label="Max Capacity (Tasks)"
@@ -106,7 +122,7 @@ export default function AddTeamMemberModal({
 
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-2">
           <div className="text-xs text-blue-800">
-            💡 <strong>Team Default:</strong> The current team capacity is set to {defaultMaxCapacity} tasks. 
+            Team Default: The current team capacity is set to {defaultMaxCapacity} tasks. 
             You can override this for individual members if needed.
           </div>
         </div>
@@ -123,7 +139,7 @@ export default function AddTeamMemberModal({
 
           <PrimaryButton
             type="submit"
-            disabled={!name.trim() || !email.trim() || isSubmitting}
+            disabled={!name.trim() || !email.trim() || !role || isSubmitting}
             isLoading={isSubmitting}
             loadingText="Adding..."
             className="flex-1"

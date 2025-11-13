@@ -1,16 +1,11 @@
+// src/components/AddTaskModal.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Modal from './Modal';
 import PrimaryButton from '@/components/PrimaryButton';
 import InputField from '@/components/InputField';
-
-interface TeamMember {
-  _id: string;
-  name: string;
-  email: string;
-  role: string;
-}
+import { useTeam } from '@/context/TeamContext';
 
 interface AddTaskModalProps {
   isOpen: boolean;
@@ -22,35 +17,8 @@ export default function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModal
   const [name, setName] = useState('');
   const [assignedTo, setAssignedTo] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
-  const [isLoadingMembers, setIsLoadingMembers] = useState(false);
 
-  // Fetch team members when modal opens
-  useEffect(() => {
-    const fetchTeamMembers = async () => {
-      if (isOpen) {
-        setIsLoadingMembers(true);
-        try {
-          const res = await fetch('/api/team');
-          const data = await res.json();
-          
-          if (data.status === 'success') {
-            setTeamMembers(data.teamMembers);
-          } else {
-            console.error('Failed to fetch team members:', data.message);
-            setTeamMembers([]);
-          }
-        } catch (error) {
-          console.error('Failed to fetch team members:', error);
-          setTeamMembers([]);
-        } finally {
-          setIsLoadingMembers(false);
-        }
-      }
-    };
-
-    fetchTeamMembers();
-  }, [isOpen]);
+  const { availableMembers, loading: loadingMembers } = useTeam();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,11 +28,11 @@ export default function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModal
     try {
       await onSubmit({
         name: name.trim(),
-        assignedTo: assignedTo.trim(),
+        assignedTo,
       });
       setName('');
       setAssignedTo('');
-      onClose(); // Close after adding task
+      onClose();
     } finally {
       setIsSubmitting(false);
     }
@@ -97,42 +65,38 @@ export default function AddTaskModal({ isOpen, onClose, onSubmit }: AddTaskModal
             value={assignedTo}
             onChange={(e) => setAssignedTo(e.target.value)}
             required
-            disabled={isSubmitting || isLoadingMembers}
+            disabled={isSubmitting || loadingMembers}
             className="w-full px-3 py-2 border border-gray-600 rounded-md bg-neutral-900 text-white focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent disabled:bg-gray-700 disabled:cursor-not-allowed"
           >
             <option value="">Select team member</option>
-            {isLoadingMembers ? (
-              <option value="" disabled>Loading team members...</option>
-            ) : teamMembers.length === 0 ? (
-              <option value="" disabled>No team members available</option>
+            {loadingMembers ? (
+              <option value="" disabled>Loading...</option>
+            ) : availableMembers.length === 0 ? (
+              <option value="" disabled>No available members (all at capacity)</option>
             ) : (
-              teamMembers.map((member) => (
+              availableMembers.map((member) => (
                 <option key={member._id} value={member.name}>
-                  {member.name} - {member.role}
+                  {member.name} - {member.role} ({member.taskCount}/{member.maxCapacity})
                 </option>
               ))
             )}
           </select>
-          {teamMembers.length === 0 && !isLoadingMembers && (
+
+          {availableMembers.length === 0 && !loadingMembers && (
             <p className="text-sm text-yellow-500 mt-1">
-              No team members found. Add team members first.
+              All team members are at full capacity.
             </p>
           )}
         </div>
 
         <div className="flex gap-3 pt-4">
-          <PrimaryButton
-            type="button"
-            onClick={handleClose}
-            disabled={isSubmitting}
-            className="flex-1"
-          >
+          <PrimaryButton type="button" onClick={handleClose} disabled={isSubmitting} className="flex-1">
             Cancel
           </PrimaryButton>
 
           <PrimaryButton
             type="submit"
-            disabled={!name.trim() || !assignedTo || isSubmitting || teamMembers.length === 0}
+            disabled={!name.trim() || !assignedTo || isSubmitting || availableMembers.length === 0}
             isLoading={isSubmitting}
             loadingText="Adding..."
             className="flex-1"

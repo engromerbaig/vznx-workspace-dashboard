@@ -13,10 +13,7 @@ export async function GET(request: Request) {
 
     const db = await getDatabase();
 
-    // Get total count for pagination info
-    const totalMembers = await db.collection('teammembers').countDocuments();
-
-    // Get paginated team members with task counts
+    // === 1. PAGINATED MEMBERS (for UI list) ===
     const membersWithTaskCount = await db.collection('teammembers').aggregate([
       {
         $lookup: {
@@ -29,23 +26,19 @@ export async function GET(request: Request) {
       {
         $addFields: {
           taskCount: { $size: '$tasks' },
-          maxCapacity: { $ifNull: ['$maxCapacity', 8] } // Default to 8 if not present
+          maxCapacity: { $ifNull: ['$maxCapacity', 8] }
         }
       },
-      {
-        $project: {
-          tasks: 0
-        }
-      },
+      { $project: { tasks: 0 } },
       { $sort: { createdAt: -1 } },
       { $skip: skip },
       { $limit: limit }
     ]).toArray();
 
-    // Calculate capacity for each member on server side
     const formattedMembers = membersWithTaskCount.map(member => {
       const capacity = calculateCapacity(member.taskCount, member.maxCapacity);
-      
+      const isAvailable = capacity < 100; // < 100% = can accept more tasks
+
       return {
         _id: member._id.toString(),
         name: member.name,
@@ -55,11 +48,15 @@ export async function GET(request: Request) {
         createdAt: member.createdAt.toISOString(),
         updatedAt: member.updatedAt.toISOString(),
         taskCount: member.taskCount,
-        capacity // Server-calculated capacity
+        capacity,
+        isAvailable // ← CRITICAL: for dropdown filtering
       };
     });
 
-    // Calculate team stats from ALL members (not just current page)
+    // === 2. TOTAL COUNT (for pagination) ===
+    const totalMembers = await db.collection('teammembers').countDocuments();
+
+    // === 3. ALL MEMBERS (for team stats) ===
     const allMembersWithTaskCount = await db.collection('teammembers').aggregate([
       {
         $lookup: {
@@ -75,16 +72,13 @@ export async function GET(request: Request) {
           maxCapacity: { $ifNull: ['$maxCapacity', 8] }
         }
       },
-      {
-        $project: {
-          tasks: 0
-        }
-      }
+      { $project: { tasks: 0 } }
     ]).toArray();
 
     const allFormattedMembers = allMembersWithTaskCount.map(member => {
       const capacity = calculateCapacity(member.taskCount, member.maxCapacity);
-      
+      const isAvailable = capacity < 100;
+
       return {
         _id: member._id.toString(),
         name: member.name,
@@ -94,14 +88,15 @@ export async function GET(request: Request) {
         createdAt: member.createdAt.toISOString(),
         updatedAt: member.updatedAt.toISOString(),
         taskCount: member.taskCount,
-        capacity
+        capacity,
+        isAvailable // ← Also include here for consistency
       };
     });
 
     const teamStats = calculateTeamStats(allFormattedMembers);
 
-    return NextResponse.json({ 
-      status: 'success', 
+    return NextResponse.json({
+      status: 'success',
       teamMembers: formattedMembers,
       teamStats,
       pagination: {
@@ -122,10 +117,10 @@ export async function GET(request: Request) {
   }
 }
 
+// POST remains unchanged (already correct)
 export async function POST(request: Request) {
   try {
     const currentUser = await getCurrentUser();
-    
     if (!currentUser) {
       return NextResponse.json(
         { status: 'error', message: 'Unauthorized' },
@@ -133,67 +128,56 @@ export async function POST(request: Request) {
       );
     }
 
-    const { name, email, role, maxCapacity }: { 
-      name: string; 
-      email: string;
-      role: string;
-      maxCapacity?: number;
-    } = await request.json();
+    const { name, email, role, maxCapacity } = await request.json();
 
-    if (!name || name.trim() === '') {
+    if (!name?.trim()) {
       return NextResponse.json({ status: 'error', message: 'Name is required' }, { status: 400 });
     }
-
-    if (!email || email.trim() === '') {
+    if (!email?.trim()) {
       return NextResponse.json({ status: 'error', message: 'Email is required' }, { status: 400 });
     }
 
     const db = await getDatabase();
     const now = new Date();
 
-    // Check if email already exists
-    const existingMember = await db.collection('teammembers').findOne({ 
-      email: email.toLowerCase().trim() 
+    const existingMember = await db.collection('teammembers').findOne({
+      email: email.toLowerCase().trim()
     });
-
     if (existingMember) {
-      return NextResponse.json({ status: 'error', message: 'Team member with this email already exists' }, { status: 400 });
+      return NextResponse.json(
+        { status: 'error', message: 'Team member with this email already exists' },
+        { status: 400 }
+      );
     }
 
-    // Get current global default from existing members
+    // Determine global default
     const existingMembers = await db.collection('teammembers').find({}).toArray();
     let globalDefault = 8;
-    
     if (existingMembers.length > 0) {
-      // Use the most common maxCapacity from existing members
-      const capacityCounts: { [key: number]: number } = {};
-      existingMembers.forEach(member => {
-        const cap = member.maxCapacity || 8;
-        capacityCounts[cap] = (capacityCounts[cap] || 0) + 1;
+      const counts: Record<number, number> = {};
+      existingMembers.forEach(m => {
+        const cap = m.maxCapacity || 8;
+        counts[cap] = (counts[cap] || 0) + 1;
       });
-      
-      // Find the most common capacity
-      globalDefault = parseInt(Object.keys(capacityCounts).reduce((a, b) => 
-        capacityCounts[parseInt(a)] > capacityCounts[parseInt(b)] ? a : b
-      ));
+      globalDefault = parseInt(
+        Object.keys(counts).reduce((a, b) => counts[+a] > counts[+b] ? a : b)
+      );
     }
 
     const member = {
       name: name.trim(),
       email: email.toLowerCase().trim(),
       role: role?.trim() || 'Team Member',
-      maxCapacity: maxCapacity || globalDefault, // Use provided or global default
+      maxCapacity: maxCapacity ?? globalDefault,
       createdAt: now,
       updatedAt: now
     };
 
     const result = await db.collection('teammembers').insertOne(member);
-    
     const newMember = await db.collection('teammembers').findOne({ _id: result.insertedId });
 
     if (!newMember) throw new Error('Failed to create team member');
 
-    // Calculate capacity for the new member (0 tasks = 0% capacity)
     const capacity = calculateCapacity(0, newMember.maxCapacity || globalDefault);
 
     const formattedMember = {
@@ -204,14 +188,21 @@ export async function POST(request: Request) {
       maxCapacity: newMember.maxCapacity || globalDefault,
       createdAt: newMember.createdAt.toISOString(),
       updatedAt: newMember.updatedAt.toISOString(),
-      taskCount: 0, // New member has zero tasks
-      capacity: capacity // Include calculated capacity
+      taskCount: 0,
+      capacity,
+      isAvailable: capacity < 100
     };
 
-    return NextResponse.json({ status: 'success', teamMember: formattedMember }, { status: 201 });
+    return NextResponse.json(
+      { status: 'success', teamMember: formattedMember },
+      { status: 201 }
+    );
 
   } catch (error) {
     console.error('Failed to create team member:', error);
-    return NextResponse.json({ status: 'error', message: 'Failed to create team member' }, { status: 500 });
+    return NextResponse.json(
+      { status: 'error', message: 'Failed to create team member' },
+      { status: 500 }
+    );
   }
 }
