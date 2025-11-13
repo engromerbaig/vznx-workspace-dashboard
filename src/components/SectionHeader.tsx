@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import { FaPlus, FaArrowRight } from 'react-icons/fa';
 import PrimaryButton from '@/components/PrimaryButton';
 import { useRouter } from 'next/navigation';
+import Heading from './Heading';
 
 interface SectionHeaderProps {
   /** Section title */
@@ -39,7 +40,7 @@ export default function SectionHeader({
   return (
     <div className="flex flex-col  sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
       {/* Title */}
-      <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+      <Heading titleColor='text-black'  title={title} showUnderline />
 
       {/* Right side: View All + Add button */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
