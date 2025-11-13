@@ -41,7 +41,7 @@ export default function TextAreaField({
           focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200
           ${error
             ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-            : 'border-gray-300 focus:border-primary'
+            : 'border-gray-600 focus:border-primary'
           }
           ${className}`}
         {...props}

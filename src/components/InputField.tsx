@@ -55,7 +55,7 @@ export default function InputField({
           className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200 pr-12
             ${error 
               ? 'border-red-500 focus:border-red-500 focus:ring-red-500' 
-              : 'border-gray-300 focus:border-primary'
+              : 'border-gray-600 focus:border-primary'
             }
             ${className}`}
           {...props}
