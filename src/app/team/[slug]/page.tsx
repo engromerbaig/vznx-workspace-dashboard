@@ -307,6 +307,8 @@ export default function TeamMemberDetailsPage() {
           </div>
         </div>
 
+        {/* Assigned Task List */}
+
         {/* Assigned Tasks Section */}
         <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
