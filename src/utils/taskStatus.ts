@@ -25,12 +25,12 @@ export const getTaskStatusColors = (status: TaskStatus): TaskStatusColors => {
       };
     case 'incomplete':
       return {
-        container: 'bg-yellow-50',
-        containerHover: 'hover:bg-yellow-100',
-        border: 'border-yellow-200',
-        icon: 'text-yellow-500',
-        checkbox: 'bg-yellow-50 border-yellow-400',
-        checkboxHover: 'hover:bg-yellow-100 hover:border-yellow-500',
+        container: 'bg-blue-50',
+        containerHover: 'hover:bg-blue-100',
+        border: 'border-blue-200',
+        icon: 'text-blue-500',
+        checkbox: 'bg-blue-50 border-blue-400',
+        checkboxHover: 'hover:bg-blue-100 hover:border-blue-500',
         text: 'text-gray-800'
       };
     default:
