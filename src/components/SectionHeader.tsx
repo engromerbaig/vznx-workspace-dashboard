@@ -23,6 +23,9 @@ interface SectionHeaderProps {
 
   /** Called when the Add button is clicked */
   onAdd?: () => void;
+
+  /** Optional icon for the heading */
+  icon?: ReactNode;
 }
 
 export default function SectionHeader({
@@ -32,15 +35,21 @@ export default function SectionHeader({
   addText,
   addIcon = <FaPlus />,
   onAdd,
+  icon, // New icon prop
 }: SectionHeaderProps) {
   const router = useRouter();
 
   const defaultAddText = addText ?? `Add ${title.replace(/s$/, '')}`;
 
   return (
-    <div className="flex flex-col  sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-      {/* Title */}
-      <Heading titleColor='text-black'  title={title} showUnderline />
+    <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+      {/* Title with optional icon */}
+      <Heading 
+        titleColor='text-black'  
+        title={title} 
+        showUnderline 
+        icon={icon} // Pass the icon to Heading
+      />
 
       {/* Right side: View All + Add button */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">

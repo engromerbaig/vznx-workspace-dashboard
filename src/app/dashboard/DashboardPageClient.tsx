@@ -20,6 +20,8 @@ import Header from '@/components/Header';
 import { MdOutlineSpaceDashboard } from "react-icons/md";
 import UserCard from '@/components/UserCard';
 import SectionHeader from '@/components/SectionHeader';
+import { MdAssignment } from 'react-icons/md';
+import { IoPeople } from 'react-icons/io5';
 
 
 interface DashboardStats {
@@ -242,6 +244,7 @@ export default function DashboardPageClient() {
     title="Recent Projects"
     viewAllHref="/projects"
     showAdd
+    icon ={<MdAssignment />}
     onAdd={() => setShowAddModal(true)}
   />
 
@@ -281,6 +284,8 @@ export default function DashboardPageClient() {
          <SectionHeader
     title="Team Members"
     viewAllHref="/team"
+        icon ={<IoPeople />}
+
   />
 
           {isLoading ? (
