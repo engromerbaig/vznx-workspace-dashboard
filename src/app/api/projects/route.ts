@@ -1,6 +1,7 @@
 // app/api/projects/route.ts
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
+import { slugify, generateUniqueSlug } from '@/utils/slugify';
 
 // Helper function to build filter query (shared across endpoints)
 export function buildProjectFilterQuery(searchParams: URLSearchParams) {
@@ -124,15 +125,26 @@ export async function POST(request: Request) {
 
     const db = await getDatabase();
 
-    // Generate slug
-    const slug = name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '');
+    // Generate base slug from project name
+    const baseSlug = slugify(name);
+
+    // Check for existing slugs with the same base
+    const existingProjects = await db.collection('projects')
+      .find({ 
+        slug: { $regex: `^${baseSlug}` } 
+      })
+      .project({ slug: 1 })
+      .toArray();
+
+    // Extract existing slugs
+    const existingSlugs = existingProjects.map(p => p.slug);
+
+    // Generate unique slug
+    const uniqueSlug = generateUniqueSlug(baseSlug, existingSlugs);
 
     const newProject = {
       name,
-      slug,
+      slug: uniqueSlug,
       description: description || '',
       status: 'planning',
       progress: 0,
