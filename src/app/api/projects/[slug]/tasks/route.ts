@@ -42,10 +42,10 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = await params; // Await the slug from params
+    const { slug } = await params;
     const db = await getDatabase();
     
-    // First get the project by slug to get its ID
+    // First get the project by slug to get its ID and slug
     const project = await db.collection('projects').findOne({ 
       slug: slug 
     });
@@ -58,6 +58,8 @@ export async function GET(
     }
 
     const projectId = project._id.toString();
+    const projectName = project.name;
+    const projectSlug = project.slug;
 
     // Use aggregation to get tasks with populated user info
     const tasks = await db.collection('tasks').aggregate([
@@ -120,7 +122,9 @@ export async function GET(
       lastModifiedBy: task.lastModifiedBy || task.createdBy || 'system',
       completedAt: task.completedAt?.toISOString(),
       createdAt: task.createdAt.toISOString(),
-      updatedAt: task.updatedAt.toISOString()
+      updatedAt: task.updatedAt.toISOString(),
+      projectName: projectName,  // ✅ Add project name from fetched project
+      projectSlug: projectSlug   // ✅ Add project slug from fetched project
     }));
 
     return NextResponse.json({ 
@@ -141,7 +145,7 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   try {
-    const { slug } = await params; // Await the slug from params
+    const { slug } = await params;
     const currentUser = await getCurrentUser();
     
     if (!currentUser) {
@@ -172,7 +176,7 @@ export async function POST(
 
     const db = await getDatabase();
     
-    // First get the project by slug to get its ID
+    // First get the project by slug to get its ID, name, and slug
     const project = await db.collection('projects').findOne({ 
       slug: slug 
     });
@@ -185,6 +189,8 @@ export async function POST(
     }
 
     const projectId = project._id.toString();
+    const projectName = project.name;
+    const projectSlug = project.slug;
     const now = new Date();
     
     const task = {
@@ -251,7 +257,9 @@ export async function POST(
       lastModifiedBy: newTask.lastModifiedBy,
       completedAt: newTask.completedAt?.toISOString(),
       createdAt: newTask.createdAt.toISOString(),
-      updatedAt: newTask.updatedAt.toISOString()
+      updatedAt: newTask.updatedAt.toISOString(),
+      projectName: projectName,  // ✅ Add project name
+      projectSlug: projectSlug   // ✅ Add project slug
     };
 
     return NextResponse.json({ 

@@ -10,7 +10,6 @@ import { updateTaskStatus, deleteTask } from '@/lib/actions/taskActions';
 import { toast } from '@/components/ToastProvider';
 import { getTaskStatusColors } from '@/utils/taskStatus';
 import Link from 'next/link';
-import { slugify } from '@/utils/slugify';
 
 interface TaskItemProps {
   task: BaseTask;
@@ -25,18 +24,9 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
 
   const taskStatusColors = getTaskStatusColors(task.status as 'complete' | 'incomplete');
 
-  // Generate project slug from project name if not provided
-  const getProjectSlug = () => {
-    if (task.projectSlug) {
-      return task.projectSlug;
-    }
-    if (task.projectName) {
-      return slugify(task.projectName);
-    }
-    return null;
-  };
-
-  const projectSlug = getProjectSlug();
+  // Only use the projectSlug if it exists
+  // If not provided, we can't safely generate a link (could be wrong)
+  const hasValidProjectLink = task.projectSlug && task.projectName;
 
   const toggleStatus = async () => {
     if (isUpdating) return;
@@ -122,9 +112,9 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
                 {showProject && task.projectName && (
                   <>
                     <span className="text-gray-300">•</span>
-                    {projectSlug ? (
+                    {hasValidProjectLink ? (
                       <Link 
-                        href={`/projects/${projectSlug}`}
+                        href={`/projects/${task.projectSlug}`}
                         className="flex items-center gap-1 text-purple-600 hover:text-purple-800 transition-colors group"
                         onClick={(e) => e.stopPropagation()} // Prevent expanding task when clicking link
                       >
@@ -203,9 +193,9 @@ export default function TaskItem({ task, onTaskUpdate, showProject = false }: Ta
                 <div className="col-span-2 flex items-center gap-2 p-2 bg-purple-50 rounded border border-purple-200 transition-colors duration-300 group">
                   <FaProjectDiagram className="text-purple-500 text-xs" />
                   <span className="font-medium text-purple-800">Project:</span>
-                  {projectSlug ? (
+                  {hasValidProjectLink ? (
                     <Link 
-                      href={`/projects/${projectSlug}`}
+                      href={`/projects/${task.projectSlug}`}
                       className="flex items-center gap-1 text-purple-700 hover:text-purple-900 transition-colors group-hover:underline"
                     >
                       <span>{task.projectName}</span>

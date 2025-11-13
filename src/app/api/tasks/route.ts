@@ -44,7 +44,8 @@ export async function GET(request: Request) {
           createdBy: 1,
           lastModifiedBy: 1,
           projectId: 1,
-          projectName: '$project.name'
+          projectName: '$project.name',
+          projectSlug: '$project.slug'  // ✅ Add project slug
         }
       },
       { $sort: { createdAt: -1 } }
@@ -62,7 +63,8 @@ export async function GET(request: Request) {
       createdBy: task.createdBy,
       lastModifiedBy: task.lastModifiedBy,
       projectId: task.projectId?.toString(),
-      projectName: task.projectName || null
+      projectName: task.projectName || null,
+      projectSlug: task.projectSlug || null  // ✅ Include in response
     }));
 
     return NextResponse.json({ status: 'success', tasks: formattedTasks });

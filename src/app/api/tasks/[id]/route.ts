@@ -42,13 +42,26 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // Await params first
+    const { id } = await params;
     const db = await getDatabase();
     
-    // Use aggregation to get task with populated user info
+    // Use aggregation to get task with populated user info AND project info
     const task = await db.collection('tasks').aggregate([
       {
         $match: { _id: new ObjectId(id) }
+      },
+      {
+        $addFields: {
+          projectObjectId: { $toObjectId: '$projectId' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'projects',
+          localField: 'projectObjectId',
+          foreignField: '_id',
+          as: 'project'
+        }
       },
       {
         $lookup: {
@@ -64,6 +77,12 @@ export async function GET(
           localField: 'lastModifiedBy',
           foreignField: '_id',
           as: 'modifier'
+        }
+      },
+      {
+        $unwind: {
+          path: '$project',
+          preserveNullAndEmptyArrays: true
         }
       },
       {
@@ -88,7 +107,9 @@ export async function GET(
           updatedAt: 1,
           completedAt: 1,
           createdBy: '$creator.username',
-          lastModifiedBy: '$modifier.username'
+          lastModifiedBy: '$modifier.username',
+          projectName: '$project.name',
+          projectSlug: '$project.slug'  // ✅ Add project slug
         }
       }
     ]).next();
@@ -110,7 +131,9 @@ export async function GET(
       lastModifiedBy: task.lastModifiedBy || task.createdBy || 'system',
       completedAt: task.completedAt?.toISOString(),
       createdAt: task.createdAt.toISOString(),
-      updatedAt: task.updatedAt.toISOString()
+      updatedAt: task.updatedAt.toISOString(),
+      projectName: task.projectName || undefined,
+      projectSlug: task.projectSlug || undefined  // ✅ Include in response
     };
 
     return NextResponse.json({ 
@@ -131,7 +154,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // Await params first
+    const { id } = await params;
     const currentUser = await getCurrentUser();
     
     if (!currentUser) {
@@ -185,10 +208,23 @@ export async function PUT(
     // Update project progress and task stats
     await updateProjectTaskStats(currentTask.projectId);
 
-    // Return updated task with populated user info
+    // Return updated task with populated user info AND project info
     const updatedTask = await db.collection('tasks').aggregate([
       {
         $match: { _id: new ObjectId(id) }
+      },
+      {
+        $addFields: {
+          projectObjectId: { $toObjectId: '$projectId' }
+        }
+      },
+      {
+        $lookup: {
+          from: 'projects',
+          localField: 'projectObjectId',
+          foreignField: '_id',
+          as: 'project'
+        }
       },
       {
         $lookup: {
@@ -204,6 +240,12 @@ export async function PUT(
           localField: 'lastModifiedBy',
           foreignField: '_id',
           as: 'modifier'
+        }
+      },
+      {
+        $unwind: {
+          path: '$project',
+          preserveNullAndEmptyArrays: true
         }
       },
       {
@@ -228,7 +270,9 @@ export async function PUT(
           updatedAt: 1,
           completedAt: 1,
           createdBy: '$creator.username',
-          lastModifiedBy: '$modifier.username'
+          lastModifiedBy: '$modifier.username',
+          projectName: '$project.name',
+          projectSlug: '$project.slug'  // ✅ Add project slug
         }
       }
     ]).next();
@@ -250,7 +294,9 @@ export async function PUT(
       lastModifiedBy: updatedTask.lastModifiedBy,
       completedAt: updatedTask.completedAt?.toISOString(),
       createdAt: updatedTask.createdAt.toISOString(),
-      updatedAt: updatedTask.updatedAt.toISOString()
+      updatedAt: updatedTask.updatedAt.toISOString(),
+      projectName: updatedTask.projectName || undefined,
+      projectSlug: updatedTask.projectSlug || undefined  // ✅ Include in response
     };
 
     return NextResponse.json({ 
@@ -271,7 +317,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // Await params first
+    const { id } = await params;
     const db = await getDatabase();
     
     // Get task first to know projectId for progress update
