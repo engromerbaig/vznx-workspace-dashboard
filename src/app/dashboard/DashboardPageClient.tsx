@@ -19,6 +19,7 @@ import { TeamEmptyState } from '@/components/empty-states/TeamEmptyState';
 import Header from '@/components/Header';
 import { MdOutlineSpaceDashboard } from "react-icons/md";
 import UserCard from '@/components/UserCard';
+import SectionHeader from '@/components/SectionHeader';
 
 
 interface DashboardStats {
@@ -237,32 +238,12 @@ export default function DashboardPageClient() {
 
         {/* Recent Projects Section */}
         <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Recent Projects</h2>
-            
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-              <div className="flex justify-between items-center sm:justify-start">
-                <button
-                  onClick={() => router.push('/projects')}
-                  className="flex cursor-pointer items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium group"
-                >
-                  View All
-                  <FaArrowRight className="text-sm transform group-hover:translate-x-1 transition-transform" />
-                </button>
-              </div>
-              
-              <div className="flex justify-end sm:justify-start">
-                <PrimaryButton
-                  onClick={() => setShowAddModal(true)}
-                  showIcon={true}
-                  icon={FaPlus}
-                  className="w-full sm:w-auto"
-                >
-                  Add Project
-                </PrimaryButton>
-              </div>
-            </div>
-          </div>
+         <SectionHeader
+    title="Recent Projects"
+    viewAllHref="/projects"
+    showAdd
+    onAdd={() => setShowAddModal(true)}
+  />
 
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -297,16 +278,10 @@ export default function DashboardPageClient() {
 
         {/* Team Members Section */}
         <div className="mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-800">Team Members</h2>
-            <button
-              onClick={() => router.push('/team')}
-              className="flex cursor-pointer items-center gap-2 text-primary hover:text-primary/80 transition-colors font-medium"
-            >
-              View All
-              <FaArrowRight className="text-sm transform group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
+         <SectionHeader
+    title="Team Members"
+    viewAllHref="/team"
+  />
 
           {isLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
