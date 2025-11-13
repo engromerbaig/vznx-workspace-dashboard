@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react';
 import { FaSearch, FaTimes, FaCalendar, FaRedo, FaSortAmountDown, FaSortAlphaDown } from 'react-icons/fa';
 import { MdSpeed, MdOutlineFilterAlt, MdOutlineFilterAltOff } from 'react-icons/md';
 import { formatDate } from '@/utils/dateFormatter';
+import { theme } from '@/theme';
 
 export interface FilterOptions {
   search: string;
@@ -194,7 +195,7 @@ export default function FilterBar({
   };
 
   return (
-    <div className={`bg-gradient-to-br from-[#2B35A0] via-[#3642b8] to-[#2B35A0] rounded-xl shadow-lg border border-[#2B35A0]/30 p-4 mb-6 ${className}`}>
+    <div className={`${theme.gradients.hero} rounded-xl shadow-lg border border-[#2B35A0]/30 p-4 mb-6 ${className}`}>
       
       {/* Mobile: Search + Filter Toggle */}
       <div className="lg:hidden">
