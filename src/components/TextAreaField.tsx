@@ -32,20 +32,22 @@ export default function TextAreaField({
       </label>
 
       {/* Textarea */}
-      <textarea
-        required={required}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className={`w-full px-4 py-3 border rounded-lg bg-neutral-800 text-white 
-          focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200
-          ${error
-            ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-            : 'border-gray-600 focus:border-primary'
-          }
-          ${className}`}
-        {...props}
-      />
+     <textarea
+  required={required}
+  value={value}
+  onChange={onChange}
+  placeholder={placeholder}
+  className={`w-full px-4 py-3 border rounded-lg  text-white 
+    focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all duration-200
+    resize-none  /* Disables resizing */
+    [appearance:textfield] [&::-webkit-resizer]:hidden  /* Hides the grip in WebKit */
+    ${error
+      ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
+      : 'border-gray-600 focus:border-primary'
+    }
+    ${className}`}
+  {...props}
+/>
 
       {/* Error Message */}
       {error && <p className="text-red-500 text-sm">{error}</p>}
