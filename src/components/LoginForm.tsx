@@ -18,6 +18,7 @@ export default function LoginForm() {
   const router = useRouter();
   const { setUser } = useUser();
 
+
   // Load remember me + dev auto-fill
   useEffect(() => {
     const rememberMeCookie = document.cookie
@@ -35,62 +36,66 @@ export default function LoginForm() {
     }
    }, []);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (isSubmitting) return;
+const handleLogin = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (isSubmitting) return;
 
-    setIsSubmitting(true);
+  setIsSubmitting(true);
 
-    if (!email || !password) {
-      toast.error('Email and password are required');
+  if (!email || !password) {
+    toast.error('Email and password are required');
+    setIsSubmitting(false);
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ 
+        email: email.trim(), 
+        password, 
+        rememberMe 
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok || data.status !== 'success') {
+      toast.error(data.message || 'Login failed');
       setIsSubmitting(false);
       return;
     }
 
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: email.trim(), 
-          password, 
-          rememberMe 
-        }),
-      });
+    // Set user in context
+    setUser(data.user);
 
-      const data = await res.json();
+    // 🔥 Save user to localStorage to avoid flicker before /me loads
+    localStorage.setItem("vz_user", JSON.stringify(data.user));
 
-      if (!res.ok || data.status !== 'success') {
-        toast.error(data.message || 'Login failed');
-        setIsSubmitting(false);
-        return;
-      }
-
-      // Set user in context
-      setUser(data.user);
-
-      // Same toast messages as before
-      if (data.sessionTakeover) {
-        toast.success('Login successful! Previous session has been terminated for security.');
-      } else {
-        toast.success(`Login successful! ${rememberMe ? 'You will stay logged in for 7 days.' : 'Session expires after 30 minutes of inactivity.'}`);
-      }
-
-      // Role-based redirect — ONLY CHANGE!
-      setTimeout(() => {
-        if (data.user.role === 'superadmin') {
-          router.push('/superadmin');
-        } else {
-          router.push('/dashboard');
-        }
-      }, 100);
-
-    } catch (error) {
-      console.error('Login network error:', error);
-      toast.error('Network error. Please check your connection and try again.');
-      setIsSubmitting(false);
+    // Same toast messages as before
+    if (data.sessionTakeover) {
+      toast.success('Login successful! Previous session has been terminated for security.');
+    } else {
+      toast.success(`Login successful! ${rememberMe ? 'You will stay logged in for 7 days.' : 'Session expires after 30 minutes of inactivity.'}`);
     }
-  };
+
+    // Role-based redirect
+    setTimeout(() => {
+      if (data.user.role === 'superadmin') {
+        router.push('/superadmin');
+      } else {
+        router.push('/dashboard');
+      }
+    }, 100);
+
+  } catch (error) {
+    console.error('Login network error:', error);
+    toast.error('Network error. Please check your connection and try again.');
+    setIsSubmitting(false);
+  }
+};
+
 
   return (
     <div className={`w-full max-w-md space-y-6 ${isSubmitting ? 'pointer-events-none opacity-50' : ''}`}>

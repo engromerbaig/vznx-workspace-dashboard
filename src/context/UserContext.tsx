@@ -14,15 +14,24 @@ interface User {
 interface UserContextType {
   user: User | null;
   setUser: (user: User | null) => void;
-  isLoading: boolean; // Add this
+  isLoading: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Add this
+  const [isLoading, setIsLoading] = useState(true);
 
+  // 🔥 STEP 1 — Hydrate instantly from localStorage (NO FLICKER)
+  useEffect(() => {
+    const savedUser = localStorage.getItem("vz_user");
+    if (savedUser) {
+      setUser(JSON.parse(savedUser)); // instant user
+    }
+  }, []);
+
+  // 🔥 STEP 2 — Verify session from backend as fallback
   useEffect(() => {
     const verifySession = async () => {
       try {
@@ -34,14 +43,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
         if (response.ok) {
           const data = await response.json();
           setUser(data.user);
+
+          // Sync with localStorage again
+          localStorage.setItem("vz_user", JSON.stringify(data.user));
         } else {
           setUser(null);
+          localStorage.removeItem("vz_user");
         }
       } catch (error) {
         console.error('Session verification failed:', error);
         setUser(null);
+        localStorage.removeItem("vz_user");
       } finally {
-        setIsLoading(false); // Set to false when done
+        setIsLoading(false);
       }
     };
 

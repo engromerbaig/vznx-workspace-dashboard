@@ -15,38 +15,44 @@ export function LogoutProvider({ children }: { children: React.ReactNode }) {
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const { setUser } = useUser();
 
-  const handleGlobalLogout = useCallback(async () => {
-    if (isLoggingOut) return;
-    
-    setIsLoggingOut(true);
-    
-    try {
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+const handleGlobalLogout = useCallback(async () => {
+  if (isLoggingOut) return;
+  
+  setIsLoggingOut(true);
+  
+  try {
+    const response = await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
 
-      // Clear user state
-      setUser(null);
+    // Clear user state
+    setUser(null);
 
-      if (!response.ok) {
-        console.warn('Logout API returned non-200 status');
-      }
+    // Clear any client-side storage used for session/flicker prevention
+    localStorage.removeItem('vz_user'); // remove stored user
+    // If you use other keys, clear them here too
+    // localStorage.removeItem('someOtherKey');
 
-      // Force full page reload to ensure clean state
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 500);
-      
-    } catch (err) {
-      console.error('Global logout error:', err);
-      setUser(null);
-      // Still redirect even on error
-      setTimeout(() => {
-        window.location.href = '/';
-      }, 500);
+    if (!response.ok) {
+      console.warn('Logout API returned non-200 status');
     }
-  }, [isLoggingOut, setUser]);
+
+    // Force full page reload to ensure clean state
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 500);
+    
+  } catch (err) {
+    console.error('Global logout error:', err);
+    setUser(null);
+    localStorage.removeItem('vz_user'); // still clear on error
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 500);
+  }
+}, [isLoggingOut, setUser]);
+
 
   return (
     <LogoutContext.Provider value={{ isLoggingOut, handleGlobalLogout }}>
