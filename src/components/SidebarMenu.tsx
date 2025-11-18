@@ -3,7 +3,7 @@
 
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { FaTimes, FaUser } from 'react-icons/fa';
+import { FaTimes, FaUser, FaCog } from 'react-icons/fa';
 import { CiLogout } from 'react-icons/ci';
 
 import PrimaryButton from '@/components/PrimaryButton';
@@ -11,6 +11,7 @@ import { useUser } from '@/context/UserContext';
 import { useLogout } from '@/context/LogoutContext';
 import { navItems } from '@/data/navItems';
 import { theme } from '@/theme';
+import { ROLES, hasRole } from '@/lib/roles';   // ← This is critical
 
 type Variant = 'desktop' | 'mobile';
 
@@ -96,11 +97,8 @@ export default function SidebarMenu({
           </div>
         )}
 
-        {/* Logo Section - Desktop: more top padding */}
-        <div className={`
-          border-b border-gray-700 flex justify-center
-          ${isMobile ? 'py-8' : 'pt-10 pb-8'}
-        `}>
+        {/* Logo Section */}
+        <div className={`border-b border-gray-700 flex justify-center ${isMobile ? 'py-8' : 'pt-10 pb-8'}`}>
           <a href="/dashboard" onClick={handleNav}>
             <Image
               src="/logo2.png"
@@ -115,6 +113,30 @@ export default function SidebarMenu({
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-6">
           <div className="space-y-2 px-5">
+
+            {/* SUPERADMIN CONTROL PANEL - TOP PRIORITY */}
+            {hasRole(user?.role, ROLES.SUPERADMIN) && (
+              <>
+                <a
+                  href="/superadmin"
+                  onClick={handleNav}
+                  className={`flex items-center gap-4 px-5 py-3.5 rounded-xl font-bold transition-all ${
+                    pathname === '/superadmin'
+                      ? 'bg-yellow-600 text-white shadow-lg shadow-yellow-600/40'
+                      : 'bg-amber-600/20 text-amber-300 hover:bg-amber-600/40 hover:text-white border border-amber-500/50'
+                  } ${isLoggingOut ? 'pointer-events-none opacity-50' : ''}`}
+                >
+                  <FaCog className="text-xl" />
+                  <span>Control Panel</span>
+                  {pathname === '/superadmin' && <div className="w-2 h-2 bg-white rounded-full ml-auto" />}
+                </a>
+
+                {/* Visual separator */}
+                <div className="h-px bg-gray-700 my-3 opacity-50" />
+              </>
+            )}
+
+            {/* Regular Navigation Items */}
             {navItems.map((item) => (
               <PrimaryButton
                 key={item.name}
@@ -127,7 +149,6 @@ export default function SidebarMenu({
 
         {/* Footer */}
         <div className="px-5 pb-8">
-          {/* 70% width centered border */}
           <div className="max-w-[70%] mx-auto border-t border-gray-700 mb-6" />
 
           {/* Desktop User Info */}
