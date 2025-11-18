@@ -122,8 +122,8 @@ export default function SidebarMenu({
                   onClick={handleNav}
                   className={`flex items-center gap-4 px-5 py-3.5 rounded-xl font-bold transition-all ${
                     pathname === '/superadmin'
-                      ? 'bg-yellow-600 text-white shadow-lg shadow-yellow-600/40'
-                      : 'bg-amber-600/20 text-amber-300 hover:bg-amber-600/40 hover:text-white border border-amber-500/50'
+                      ? 'bg-primary text-white shadow-lg '
+                      : ' hover:text-white hover:bg-primary/90 border border-black/50  '
                   } ${isLoggingOut ? 'pointer-events-none opacity-50' : ''}`}
                 >
                   <FaCog className="text-xl" />
@@ -132,7 +132,6 @@ export default function SidebarMenu({
                 </a>
 
                 {/* Visual separator */}
-                <div className="h-px bg-gray-700 my-3 opacity-50" />
               </>
             )}
 
