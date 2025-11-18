@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { FaSignInAlt, FaUserClock } from 'react-icons/fa';
+import { FaSignInAlt } from 'react-icons/fa';
 import { useUser } from '@/context/UserContext';
 import InputField from '@/components/InputField';
 import PrimaryButton from '@/components/PrimaryButton';
@@ -18,7 +18,7 @@ export default function LoginForm() {
   const router = useRouter();
   const { setUser } = useUser();
 
-  // Load remember me preference on component mount
+  // Load remember me + dev auto-fill
   useEffect(() => {
     const rememberMeCookie = document.cookie
       .split('; ')
@@ -29,18 +29,16 @@ export default function LoginForm() {
       setRememberMe(value === 'true');
     }
 
-    // Auto-fill mock credentials in development
     if (process.env.NODE_ENV === 'development') {
       setEmail('admin');
       setPassword('admin');
     }
-  }, []);
+   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (isSubmitting) return;
-    
+
     setIsSubmitting(true);
 
     if (!email || !password) {
@@ -52,9 +50,7 @@ export default function LoginForm() {
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           email: email.trim(), 
           password, 
@@ -64,31 +60,29 @@ export default function LoginForm() {
 
       const data = await res.json();
 
-      if (!res.ok) {
-        toast.error(data.message || `Login failed: ${res.status}`);
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (data.status !== 'success') {
+      if (!res.ok || data.status !== 'success') {
         toast.error(data.message || 'Login failed');
         setIsSubmitting(false);
         return;
       }
 
-      // Set user context
+      // Set user in context
       setUser(data.user);
-      
-      // Show appropriate message based on session takeover
+
+      // Same toast messages as before
       if (data.sessionTakeover) {
         toast.success('Login successful! Previous session has been terminated for security.');
       } else {
         toast.success(`Login successful! ${rememberMe ? 'You will stay logged in for 7 days.' : 'Session expires after 30 minutes of inactivity.'}`);
       }
 
-      // Always redirect to dashboard
+      // Role-based redirect — ONLY CHANGE!
       setTimeout(() => {
-        router.push('/dashboard');
+        if (data.user.role === 'superadmin') {
+          router.push('/superadmin');
+        } else {
+          router.push('/dashboard');
+        }
       }, 100);
 
     } catch (error) {
@@ -100,9 +94,6 @@ export default function LoginForm() {
 
   return (
     <div className={`w-full max-w-md space-y-6 ${isSubmitting ? 'pointer-events-none opacity-50' : ''}`}>
-      {/* Development notice */}
-   
-      
       <form onSubmit={handleLogin} className="space-y-5">
         <InputField
           label="Email or Username"

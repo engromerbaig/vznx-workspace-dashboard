@@ -18,3 +18,12 @@ export async function getCurrentUser() {
   return user;
 }
 
+export async function verifySuperAdmin() {
+  const user = await getCurrentUser();
+  return user?.role === 'superadmin' ? user : null;
+}
+
+export async function verifyRole(requiredRole: string) {
+  const user = await getCurrentUser();
+  return user?.role === requiredRole ? user : null;
+}

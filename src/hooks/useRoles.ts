@@ -1,35 +1,40 @@
 // src/hooks/useRoles.ts
-import { useMemo } from 'react';
 import { useUser } from '@/context/UserContext';
 import { ROLES, hasRole } from '@/lib/roles';
 
 export function useRoles() {
   const { user } = useUser();
-  const role = user?.role;
 
-  return useMemo(() => {
-    const isSuperAdmin = hasRole(role, ROLES.SUPERADMIN);
-    const isManager = hasRole(role, ROLES.MANAGER);
-    const isViewer = hasRole(role, ROLES.VIEWER);
+  const isSuperAdmin = () => hasRole(user?.role, ROLES.SUPERADMIN);
+  const isManager = () => hasRole(user?.role, ROLES.MANAGER);
+  const isUser = () => hasRole(user?.role, ROLES.USER);
+  
+  // For exact role matching (if needed)
+  const isExactlySuperAdmin = () => user?.role === ROLES.SUPERADMIN;
+  const isExactlyManager = () => user?.role === ROLES.MANAGER;
+  const isExactlyUser = () => user?.role === ROLES.USER;
 
-    return {
-      // Role checks
-      isSuperAdmin,
-      isManager,
-      isViewer,
+  // Check if user has at least a certain role (hierarchy)
+  const hasAtLeastManagerRole = () => hasRole(user?.role, ROLES.MANAGER);
+  const hasAtLeastUserRole = () => hasRole(user?.role, ROLES.USER);
 
-      // Exact matches
-      isExactlySuperAdmin: role === ROLES.SUPERADMIN,
-      isExactlyManager: role === ROLES.MANAGER,
-      isExactlyViewer: role === ROLES.VIEWER,
-
-      // Hierarchy
-      hasAtLeastManagerRole: hasRole(role, ROLES.MANAGER),
-      hasAtLeastViewerRole: !!user, // any authenticated user is at least Viewer
-
-      // Raw
-      userRole: role as 'superadmin' | 'manager' | 'viewer' | undefined,
-      isAuthenticated: !!user,
-    };
-  }, [role, user]);
+  return {
+    // Role checks
+    isSuperAdmin,
+    isManager, 
+    isUser,
+    
+    // Exact role checks
+    isExactlySuperAdmin,
+    isExactlyManager,
+    isExactlyUser,
+    
+    // Hierarchy checks
+    hasAtLeastManagerRole,
+    hasAtLeastUserRole,
+    
+    // Raw data
+    userRole: user?.role,
+    isAuthenticated: !!user
+  };
 }
