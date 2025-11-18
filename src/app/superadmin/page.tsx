@@ -1,27 +1,40 @@
 // src/app/superadmin/page.tsx
-
 'use client';
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useRoles } from '@/hooks/useRoles';
+import { useUser } from '@/context/UserContext';
+import { ROLES, hasRole } from '@/lib/roles';
 
 export default function SuperAdminPage() {
-  const { isSuperAdmin, isAuthenticated } = useRoles();
+  const { user, isLoading } = useUser();
   const router = useRouter();
 
-  // Redirect if not authenticated or not superadmin
   useEffect(() => {
-    if (!isAuthenticated) {
+    // Don't redirect while still loading
+    if (isLoading) return;
+
+    // After loading, check authentication
+    if (!user) {
       router.replace('/login');
-    } else if (!isSuperAdmin()) {
+      return;
+    }
+
+    if (!hasRole(user.role, ROLES.SUPERADMIN)) {
       router.replace('/dashboard');
     }
-  }, [isAuthenticated, isSuperAdmin, router]);
+  }, [user, isLoading, router]);
 
-  // Show nothing while redirecting
-  if (!isAuthenticated || !isSuperAdmin()) {
-    return null;
+  // Show loading while checking
+  if (isLoading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-900">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-400">Verifying access...</p>
+        </div>
+      </div>
+    );
   }
 
   return (

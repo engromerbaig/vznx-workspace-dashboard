@@ -1,21 +1,55 @@
-// src/context/UserContext.tsx
+// context/UserContext.tsx
 'use client';
 
-import { createContext, useContext, useState, ReactNode } from 'react';
-import { BaseUser } from '@/types/user';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+
+interface User {
+  _id: string;
+  username: string;
+  email: string;
+  name: string;
+  role: string;
+}
 
 interface UserContextType {
-  user: BaseUser | null;
-  setUser: (user: BaseUser | null) => void;
+  user: User | null;
+  setUser: (user: User | null) => void;
+  isLoading: boolean; // Add this
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<BaseUser | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Add this
+
+  useEffect(() => {
+    const verifySession = async () => {
+      try {
+        const response = await fetch('/api/auth/verify-session', {
+          method: 'GET',
+          credentials: 'include',
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Session verification failed:', error);
+        setUser(null);
+      } finally {
+        setIsLoading(false); // Set to false when done
+      }
+    };
+
+    verifySession();
+  }, []);
 
   return (
-    <UserContext.Provider value={{ user, setUser }}>
+    <UserContext.Provider value={{ user, setUser, isLoading }}>
       {children}
     </UserContext.Provider>
   );
@@ -23,7 +57,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
 export function useUser() {
   const context = useContext(UserContext);
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useUser must be used within a UserProvider');
   }
   return context;

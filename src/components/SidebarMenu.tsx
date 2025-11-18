@@ -94,7 +94,7 @@ export default function SidebarMenu({
         )}
 
         {/* Logo */}
-        <div className={`border-b border-gray-700 flex justify-center ${isMobile ? 'py-8' : 'pt-10 pb-8'}`}>
+        <div className={`border-b max-w-[70%] mx-auto border-gray-700 flex justify-center ${isMobile ? 'py-8' : 'pt-10 pb-8'}`}>
           <a href="/dashboard" onClick={handleNav}>
             <Image
               src="/logo2.png"
