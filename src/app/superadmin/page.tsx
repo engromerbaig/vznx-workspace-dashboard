@@ -11,6 +11,7 @@ import ProgressCard from '@/components/ProgressCard';
 import SkeletonLoader from '@/components/SkeletonLoader';
 import Heading from '@/components/Heading';
 import BodyText from '@/components/BodyText';
+import { theme } from '@/theme';
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   LineChart, Line, AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar
@@ -40,6 +41,7 @@ const pieData = [
 ];
 
 const pieColors = ['#10B981', '#F59E0B', '#EF4444'];
+
 
 const growthData = [
   { month: 'Jan', logins: 320, approvals: 45, newAdmins: 8 },
@@ -229,8 +231,8 @@ export default function SuperAdminPage() {
         {/* First Row of Charts - 2 columns */}
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-6">
           {/* Admin Status Pie */}
-          <div className="bg-black backdrop-blur border border-gray-800 rounded-xl p-6">
-            <Heading title="Admin Status Overview" icon={<FaUsers />} />
+          <div className={`${theme.gradients.footer} backdrop-blur border border-gray-800 rounded-xl p-6`}>
+            <Heading title="Admin Status Overview"  icon={<FaUsers className='text-white' />} />
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie
@@ -253,8 +255,8 @@ export default function SuperAdminPage() {
           </div>
 
           {/* Growth Trends */}
-          <div className="bg-black backdrop-blur border border-gray-800 rounded-xl p-6">
-            <Heading title="Growth & Activity Trends" icon={<FaChartLine />} />
+          <div className={`${theme.gradients.footer} backdrop-blur border border-gray-800 rounded-xl p-6`}>
+            <Heading title="Growth & Activity Trends" icon={<FaChartLine className='text-white' />} />
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={growthData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -273,8 +275,8 @@ export default function SuperAdminPage() {
         {/* Second Row of Charts - 3 columns */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {/* Weekly Activity */}
-          <div className="bg-black backdrop-blur border border-gray-800 rounded-xl p-6">
-            <Heading title="Weekly Admin Activity" icon={<FaClock />} />
+<div className={`${theme.gradients.hero} bg-black backdrop-blur border border-gray-800 rounded-xl p-6`}>
+            <Heading title="Weekly Admin Activity" icon={<FaClock className='text-white' />} />
             <ResponsiveContainer width="100%" height={250}>
               <AreaChart data={activityData}>
                 <CartesianGrid strokeDasharray="4 4" stroke="#374151" />
@@ -287,8 +289,8 @@ export default function SuperAdminPage() {
           </div>
 
           {/* Security Events */}
-          <div className="bg-black backdrop-blur border border-gray-800 rounded-xl p-6">
-            <Heading title="Security Events" icon={<FaShieldVirus />} />
+<div className={`${theme.gradients.hero} backdrop-blur border border-gray-800 rounded-xl p-6`}>
+            <Heading title="Security Events" icon={<FaShieldVirus className='text-white' />} />
             <ResponsiveContainer width="100%" height={250}>
               <BarChart data={securityEvents}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -311,8 +313,8 @@ export default function SuperAdminPage() {
           </div>
 
           {/* Quick Actions Card */}
-          <div className="bg-black backdrop-blur border border-gray-800 rounded-xl p-6">
-            <Heading title="Quick Actions" icon={<FaCog />} />
+        <div className={`${theme.gradients.hero} backdrop-blur border border-gray-800 rounded-xl p-6`}>
+            <Heading title="Quick Actions" icon={<FaCog className='text-white' />} />
             <div className="space-y-4 mt-6">
               {[
                 { icon: <FaUserPlus className="text-green-400" />, label: 'Create New Admin', action: () => {} },
@@ -334,8 +336,8 @@ export default function SuperAdminPage() {
         </div>
 
         {/* System Performance Radar - Full width */}
-        <div className="bg-black backdrop-blur border border-gray-800 rounded-xl p-6 mb-6">
-          <Heading title="System Health Radar" icon={<FaServer />} />
+        <div className={`${theme.gradients.footer} backdrop-blur border border-gray-800 rounded-xl p-6 mb-6`}>
+          <Heading title="System Health Radar" icon={<FaServer className='text-white' />} />
           <ResponsiveContainer width="100%" height={350}>
             <RadarChart data={performanceData}>
               <PolarGrid stroke="#374151" />
@@ -350,9 +352,9 @@ export default function SuperAdminPage() {
         {/* Recent Activity & System Status - Side by side */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-10">
           {/* Recent Activity */}
-          <div className="bg-black backdrop-blur border border-gray-800 rounded-xl p-6">
+          <div className={`  ${theme.gradients.hero} backdrop-blur border border-gray-800 rounded-xl p-6`}>
             <div className="flex items-center gap-3 mb-6">
-              <FaHistory className="text-indigo-400 text-2xl" />
+              <FaHistory className="text-white text-2xl" />
               <Heading title="Recent Admin Actions" titleSize="text-xl" />
             </div>
             <div className="space-y-4">
@@ -378,7 +380,7 @@ export default function SuperAdminPage() {
           </div>
 
           {/* System Status */}
-          <div className="bg-black backdrop-blur border border-gray-800 rounded-xl p-6">
+          <div className={`  ${theme.gradients.hero} backdrop-blur border border-gray-800 rounded-xl p-6`}>
             <div className="flex items-center gap-3 mb-6">
               <FaExclamationTriangle className="text-yellow-400 text-2xl" />
               <Heading title="System Status & Alerts" titleSize="text-xl" />
