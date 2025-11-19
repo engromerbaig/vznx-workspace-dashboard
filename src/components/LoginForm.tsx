@@ -70,8 +70,6 @@ const handleLogin = async (e: React.FormEvent) => {
     // Set user in context
     setUser(data.user);
 
-    // 🔥 Save user to localStorage to avoid flicker before /me loads
-    localStorage.setItem("vz_user", JSON.stringify(data.user));
 
     // Same toast messages as before
     if (data.sessionTakeover) {

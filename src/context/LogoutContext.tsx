@@ -29,11 +29,7 @@ const handleGlobalLogout = useCallback(async () => {
     // Clear user state
     setUser(null);
 
-    // Clear any client-side storage used for session/flicker prevention
-    localStorage.removeItem('vz_user'); // remove stored user
-    // If you use other keys, clear them here too
-    // localStorage.removeItem('someOtherKey');
-
+  
     if (!response.ok) {
       console.warn('Logout API returned non-200 status');
     }
@@ -46,7 +42,6 @@ const handleGlobalLogout = useCallback(async () => {
   } catch (err) {
     console.error('Global logout error:', err);
     setUser(null);
-    localStorage.removeItem('vz_user'); // still clear on error
     setTimeout(() => {
       window.location.href = '/';
     }, 500);
