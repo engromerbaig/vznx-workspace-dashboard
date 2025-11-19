@@ -7,6 +7,7 @@ import { BaseProject } from '@/types/project';
 import ProjectCard from '@/components/ProjectCard';
 import ProgressCard from '@/components/ProgressCard';
 import AddProjectModal from '@/components/AddProjectModal';
+import EditProjectModal from '@/components/EditProjectModal';
 import PrimaryButton from '@/components/PrimaryButton';
 import Pagination from '@/components/Pagination';
 import FilterBar, { FilterOptions } from '@/components/FilterBar';
@@ -35,6 +36,8 @@ export default function ProjectsPageClient() {
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<BaseProject | null>(null);
   const [totalProjectsCount, setTotalProjectsCount] = useState(0);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   
@@ -57,6 +60,44 @@ export default function ProjectsPageClient() {
     initialPage: 1,
     maxVisiblePages: 5
   });
+
+  // Handle edit project
+  const handleEditProject = (project: BaseProject) => {
+    setEditingProject(project);
+    setShowEditModal(true);
+  };
+
+// Handle update project submission
+  const handleUpdateProject = async (projectData: { projectId: string; name: string; description?: string }) => {
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projectData),
+      });
+
+      const data = await res.json();
+
+      if (data.status === 'success') {
+        // Refresh the current page and stats
+        await fetchProjects(pagination.currentPage, false);
+        setShowEditModal(false);
+        setEditingProject(null);
+        toast.success(`Project "${data.project.name}" updated successfully!`);
+      } else {
+        toast.error(data.message || 'Failed to update project');
+      }
+    } catch (error) {
+      console.error('Failed to update project:', error);
+      toast.error('Failed to update project');
+    }
+  };
+
+  // Close edit modal
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditingProject(null);
+  };
 
   // Build query params from filters
   const buildQueryParams = (page: number = 1) => {
@@ -363,6 +404,7 @@ export default function ProjectsPageClient() {
                 key={project._id}
                 project={project}
                 onDelete={handleDeleteProject}
+                onEdit={handleEditProject}
               />
             ))}
           </div>
@@ -395,6 +437,14 @@ export default function ProjectsPageClient() {
         isOpen={showAddModal}
         onClose={() => setShowAddModal(false)}
         onSubmit={handleAddProject}
+      />
+
+      {/* Edit Project Modal */}
+      <EditProjectModal
+        isOpen={showEditModal}
+        onClose={handleCloseEditModal}
+        onSubmit={handleUpdateProject}
+        project={editingProject}
       />
     </>
   );

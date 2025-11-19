@@ -10,6 +10,7 @@ import ProjectCard from '@/components/ProjectCard';
 import TeamMemberCard from '@/components/TeamMemberCard';
 import ProgressCard from '@/components/ProgressCard';
 import AddProjectModal from '@/components/AddProjectModal';
+import EditProjectModal from '@/components/EditProjectModal'; // Add this import
 import PrimaryButton from '@/components/PrimaryButton';
 import SkeletonLoader from '@/components/SkeletonLoader';
 import { FaPlus, FaProjectDiagram, FaTasks, FaUsers, FaCheckCircle, FaArrowRight } from 'react-icons/fa';
@@ -22,7 +23,6 @@ import UserCard from '@/components/UserCard';
 import SectionHeader from '@/components/SectionHeader';
 import { MdAssignment } from 'react-icons/md';
 import { IoPeople } from 'react-icons/io5';
-
 
 interface DashboardStats {
   totalProjects: number;
@@ -44,6 +44,8 @@ export default function DashboardPageClient() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false); // Add edit modal state
+  const [editingProject, setEditingProject] = useState<BaseProject | null>(null); // Add editing project state
 
   // Fetch all data for dashboard - FIXED TEAM MEMBERS COUNT
   const fetchDashboardData = async () => {
@@ -101,6 +103,44 @@ export default function DashboardPageClient() {
   useEffect(() => {
     fetchDashboardData();
   }, []);
+
+  // Handle edit project
+  const handleEditProject = (project: BaseProject) => {
+    setEditingProject(project);
+    setShowEditModal(true);
+  };
+
+  // Handle update project submission
+  const handleUpdateProject = async (projectData: { projectId: string; name: string; description?: string }) => {
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projectData),
+      });
+
+      const data = await res.json();
+
+      if (data.status === 'success') {
+        // Refresh all data to get updated stats
+        await fetchDashboardData();
+        setShowEditModal(false);
+        setEditingProject(null);
+        toast.success(`Project "${data.project.name}" updated successfully!`);
+      } else {
+        toast.error(data.message || 'Failed to update project');
+      }
+    } catch (error) {
+      console.error('Failed to update project:', error);
+      toast.error('Failed to update project');
+    }
+  };
+
+  // Close edit modal
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setEditingProject(null);
+  };
 
   // Add new project
   const handleAddProject = async (projectData: { name: string; description?: string }) => {
@@ -173,142 +213,139 @@ export default function DashboardPageClient() {
 
   return (
     <>
-        
-        {/* Header */}
-   <Header 
-  text="Dashboard Overview"
-  icon={<MdOutlineSpaceDashboard  />}
+      {/* Header */}
+      <Header 
+        text="Dashboard Overview"
+        icon={<MdOutlineSpaceDashboard />}
+      />
 
-/>
-        {/* Welcome Message */}
-{user && <UserCard user={user} />}
+      {/* Welcome Message */}
+      {user && <UserCard user={user} />}
 
-
-        {/* Dashboard Stats using ProgressCard - NOW USING ACCURATE STATS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {isLoading ? (
-            <>
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="bg-white rounded-lg shadow-md p-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <SkeletonLoader width="w-12" height="h-12" variant="circle" />
-                  </div>
-                  <SkeletonLoader width="w-3/4" height="h-5" className="mb-2" />
-                  <SkeletonLoader width="w-1/2" height="h-8" />
+      {/* Dashboard Stats using ProgressCard - NOW USING ACCURATE STATS */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {isLoading ? (
+          <>
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="bg-white rounded-lg shadow-md p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <SkeletonLoader width="w-12" height="h-12" variant="circle" />
                 </div>
-              ))}
-            </>
-          ) : (
-        <>
-  <ProgressCard
-    title="Total Projects"
-    value={dashboardStats.totalProjects}
-    icon={<FaProjectDiagram />}
-    color="blue"
-    size="lg"
-    href="/projects"
-  />
-  
-  <ProgressCard
-    title="Completed Projects"
-    value={dashboardStats.completedProjects}
-    icon={<FaCheckCircle />}
-    color="green"
-    size="lg"
-  />
-  
-  <ProgressCard
-    title="Total Tasks"
-    value={dashboardStats.totalTasks}
-    icon={<FaTasks />}
-    color="purple"
-    size="lg"
-  />
-  
-  {/* ✅ Now shows correct total */}
-  <ProgressCard
-    title="Team Members"
-    value={dashboardStats.totalTeamMembers}
-    icon={<FaUsers />}
-    color="orange"
-    size="lg"
-    href="/team"
-  />
-</>
-          )}
-        </div>
+                <SkeletonLoader width="w-3/4" height="h-5" className="mb-2" />
+                <SkeletonLoader width="w-1/2" height="h-8" />
+              </div>
+            ))}
+          </>
+        ) : (
+          <>
+            <ProgressCard
+              title="Total Projects"
+              value={dashboardStats.totalProjects}
+              icon={<FaProjectDiagram />}
+              color="blue"
+              size="lg"
+              href="/projects"
+            />
+            
+            <ProgressCard
+              title="Completed Projects"
+              value={dashboardStats.completedProjects}
+              icon={<FaCheckCircle />}
+              color="green"
+              size="lg"
+            />
+            
+            <ProgressCard
+              title="Total Tasks"
+              value={dashboardStats.totalTasks}
+              icon={<FaTasks />}
+              color="purple"
+              size="lg"
+            />
+            
+            {/* ✅ Now shows correct total */}
+            <ProgressCard
+              title="Team Members"
+              value={dashboardStats.totalTeamMembers}
+              icon={<FaUsers />}
+              color="orange"
+              size="lg"
+              href="/team"
+            />
+          </>
+        )}
+      </div>
 
-        {/* Recent Projects Section */}
-        <div className="py-8 lg:py-12">
-         <SectionHeader
-    title="Recent Projects"
-    viewAllHref="/projects"
-    showAdd
-    icon ={<MdAssignment />}
-    onAdd={() => setShowAddModal(true)}
-  />
+      {/* Recent Projects Section */}
+      <div className="py-8 lg:py-12">
+        <SectionHeader
+          title="Recent Projects"
+          viewAllHref="/projects"
+          showAdd
+          icon={<MdAssignment />}
+          onAdd={() => setShowAddModal(true)}
+        />
 
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-white rounded-lg shadow-md p-6">
-                  <SkeletonLoader width="w-3/4" height="h-6" className="mb-4" />
-                  <SkeletonLoader width="w-1/2" height="h-4" className="mb-6" />
-                  <SkeletonLoader width="w-full" height="h-3" className="mb-2" />
-                  <SkeletonLoader width="w-5/6" height="h-3" className="mb-4" />
-                  <div className="flex gap-2 mt-4">
-                    <SkeletonLoader width="w-20" height="h-6" />
-                    <SkeletonLoader width="w-24" height="h-6" />
-                  </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white rounded-lg shadow-md p-6">
+                <SkeletonLoader width="w-3/4" height="h-6" className="mb-4" />
+                <SkeletonLoader width="w-1/2" height="h-4" className="mb-6" />
+                <SkeletonLoader width="w-full" height="h-3" className="mb-2" />
+                <SkeletonLoader width="w-5/6" height="h-3" className="mb-4" />
+                <div className="flex gap-2 mt-4">
+                  <SkeletonLoader width="w-20" height="h-6" />
+                  <SkeletonLoader width="w-24" height="h-6" />
                 </div>
-              ))}
-            </div>
-          ) : recentProjects.length === 0 ? (
+              </div>
+            ))}
+          </div>
+        ) : recentProjects.length === 0 ? (
+          <ProjectsEmptyState onAddProject={() => setShowAddModal(true)} />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {recentProjects.map(project => (
+              <ProjectCard
+                key={project._id}
+                project={project}
+                onDelete={handleDeleteProject}
+                onEdit={handleEditProject} // Add onEdit prop
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
-            <ProjectsEmptyState onAddProject={() => setShowAddModal(true)} />
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {recentProjects.map(project => (
-                <ProjectCard
-                  key={project._id}
-                  project={project}
-                  onDelete={handleDeleteProject}
-                />
-              ))}
-            </div>
-          )}
-        </div>
+      {/* Team Members Section */}
+      <div className="py-8 lg:py-12">
+        <SectionHeader
+          title="Team Members"
+          viewAllHref="/team"
+          icon={<IoPeople />}
+        />
 
-        {/* Team Members Section */}
-        <div className="py-8 lg:py-12">
-         <SectionHeader
-    title="Team Members"
-    viewAllHref="/team"
-        icon ={<IoPeople />}
-
-  />
-
-          {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="bg-white rounded-xl shadow-md p-6 min-h-[320px]">
-                  <div className="flex items-center gap-4 mb-6">
-                    <SkeletonLoader width="w-16" height="h-16" variant="circle" />
-                    <div className="flex-1">
-                      <SkeletonLoader width="w-3/4" height="h-6" className="mb-2" />
-                      <SkeletonLoader width="w-1/2" height="h-4" />
-                    </div>
-                  </div>
-                  <div className="space-y-3">
-                    <SkeletonLoader width="w-full" height="h-4" />
-                    <SkeletonLoader width="w-5/6" height="h-4" />
-                    <SkeletonLoader width="w-full" height="h-20" className="mt-4" />
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="bg-white rounded-xl shadow-md p-6 min-h-[320px]">
+                <div className="flex items-center gap-4 mb-6">
+                  <SkeletonLoader width="w-16" height="h-16" variant="circle" />
+                  <div className="flex-1">
+                    <SkeletonLoader width="w-3/4" height="h-6" className="mb-2" />
+                    <SkeletonLoader width="w-1/2" height="h-4" />
                   </div>
                 </div>
+                <div className="space-y-3">
+                  <SkeletonLoader width="w-full" height="h-4" />
+                  <SkeletonLoader width="w-5/6" height="h-4" />
+                  <SkeletonLoader width="w-full" height="h-20" className="mt-4" />
+                </div>
+              </div>
               ))}
             </div>
           ) : displayTeamMembers.length === 0 ? (
-          <TeamEmptyState onAddMember={() => router.push('/team')} />
+            <TeamEmptyState onAddMember={() => router.push('/team')} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {displayTeamMembers.map(member => (
@@ -320,14 +357,22 @@ export default function DashboardPageClient() {
               ))}
             </div>
           )}
-        </div>
+      </div>
 
-        {/* Add Project Modal */}
-        <AddProjectModal
-          isOpen={showAddModal}
-          onClose={() => setShowAddModal(false)}
-          onSubmit={handleAddProject}
-        />
+      {/* Add Project Modal */}
+      <AddProjectModal
+        isOpen={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        onSubmit={handleAddProject}
+      />
+
+      {/* Edit Project Modal */}
+      <EditProjectModal
+        isOpen={showEditModal}
+        onClose={handleCloseEditModal}
+        onSubmit={handleUpdateProject}
+        project={editingProject}
+      />
     </>
   );
 }

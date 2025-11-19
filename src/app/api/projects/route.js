@@ -2,6 +2,7 @@
 import { NextResponse } from 'next/server';
 import { getDatabase } from '@/lib/mongodb';
 import { slugify, generateUniqueSlug } from '@/utils/slugify';
+import { ObjectId } from 'mongodb';
 
 // Helper function to build filter query (shared across endpoints)
 function buildProjectFilterQuery(searchParams) {
@@ -168,6 +169,107 @@ export async function POST(request) {
     console.error('Failed to create project:', error);
     return NextResponse.json(
       { status: 'error', message: 'Failed to create project' },
+      { status: 500 }
+    );
+  }
+}
+
+
+export async function PUT(request) {
+  try {
+    const body = await request.json();
+    const { projectId, name, description } = body;
+
+    if (!projectId) {
+      return NextResponse.json(
+        { status: 'error', message: 'Project ID is required' },
+        { status: 400 }
+      );
+    }
+
+    if (!name || name.trim() === '') {
+      return NextResponse.json(
+        { status: 'error', message: 'Project name is required' },
+        { status: 400 }
+      );
+    }
+
+    const db = await getDatabase();
+
+    // Check if project exists
+    const existingProject = await db.collection('projects').findOne({ 
+      _id: new ObjectId(projectId) 
+    });
+
+    if (!existingProject) {
+      return NextResponse.json(
+        { status: 'error', message: 'Project not found' },
+        { status: 404 }
+      );
+    }
+
+    const updateFields = {
+      updatedAt: new Date()
+    };
+
+    // If name changed, update name and generate new slug
+    if (name !== existingProject.name) {
+      updateFields.name = name.trim();
+      
+      // Generate new slug only if name changed
+      const baseSlug = slugify(name);
+      
+      // Find all existing slugs that start with the base slug (excluding current project)
+      const existingProjects = await db
+        .collection('projects')
+        .find({ 
+          slug: { $regex: `^${baseSlug}` },
+          _id: { $ne: new ObjectId(projectId) }
+        })
+        .project({ slug: 1 })
+        .toArray();
+
+      const existingSlugs = existingProjects.map(p => p.slug);
+      const uniqueSlug = generateUniqueSlug(baseSlug, existingSlugs);
+      
+      updateFields.slug = uniqueSlug;
+    }
+
+    // Update description if provided
+    if (description !== undefined) {
+      updateFields.description = description;
+    }
+
+    // Update the project
+    const result = await db.collection('projects').updateOne(
+      { _id: new ObjectId(projectId) },
+      { $set: updateFields }
+    );
+
+    if (result.matchedCount === 0) {
+      return NextResponse.json(
+        { status: 'error', message: 'Project not found' },
+        { status: 404 }
+      );
+    }
+
+    // Fetch the updated project
+    const updatedProject = await db.collection('projects').findOne({ 
+      _id: new ObjectId(projectId) 
+    });
+
+    return NextResponse.json({
+      status: 'success',
+      project: {
+        ...updatedProject,
+        _id: updatedProject._id.toString()
+      }
+    });
+
+  } catch (error) {
+    console.error('Failed to update project:', error);
+    return NextResponse.json(
+      { status: 'error', message: 'Failed to update project' },
       { status: 500 }
     );
   }
