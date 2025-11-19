@@ -2,14 +2,24 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { BaseProject } from '@/types/project';
 import { BaseTask } from '@/types/task';
-import TaskItem from '@/components/TaskItem';
 import AddTaskModal from '@/components/AddTaskModal';
+import EditProjectModal from '@/components/EditProjectModal';
 import ProgressCard from '@/components/ProgressCard';
 import PrimaryButton from '@/components/PrimaryButton';
-import { FaPlus, FaArrowLeft, FaSync, FaTasks, FaCheck, FaClock, FaChartLine } from 'react-icons/fa';
+import {
+  FaPlus,
+  FaArrowLeft,
+  FaSync,
+  FaTasks,
+  FaCheck,
+  FaClock,
+  FaChartLine,
+  FaCalendar,
+} from 'react-icons/fa';
+import { MdOutlineEdit } from 'react-icons/md';
 import { createTask } from '@/lib/actions/taskActions';
 import { formatDateTime, formatTime } from '@/utils/dateFormatter';
 import { getStatusColors, formatStatusText } from '@/utils/projectStatus';
@@ -18,7 +28,7 @@ import { getProjectStats } from '@/utils/projectStats';
 import { toast } from '@/components/ToastProvider';
 import SkeletonLoader from '@/components/SkeletonLoader';
 import TaskList from '@/components/TaskList';
-import { useTeam } from '@/context/TeamContext'; // ← ADD THIS
+import { useTeam } from '@/context/TeamContext';
 
 interface ProjectDetailsPageClientProps {
   slug: string;
@@ -26,49 +36,43 @@ interface ProjectDetailsPageClientProps {
 
 export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageClientProps) {
   const router = useRouter();
-  const projectSlug = slug;
+  const pathname = usePathname();
 
   const [project, setProject] = useState<BaseProject | null>(null);
   const [tasks, setTasks] = useState<BaseTask[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+  const [showEditProjectModal, setShowEditProjectModal] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [error, setError] = useState<string | null>(null);
 
-  // GET refresh() FROM TeamContext
   const { refresh: refreshTeam } = useTeam();
 
-  // Fetch project and tasks
   const fetchProjectData = async () => {
     try {
       setIsRefreshing(true);
       setError(null);
 
-      const projectRes = await fetch(`/api/projects/${projectSlug}?t=${Date.now()}`);
+      const projectRes = await fetch(`/api/projects/${slug}?t=${Date.now()}`);
       if (!projectRes.ok) throw new Error('Failed to fetch project');
       const projectData = await projectRes.json();
 
-      if (projectData.status === 'success') {
-        setProject(projectData.project);
+      if (projectData.status !== 'success') throw new Error(projectData.message || 'Project not found');
 
-        const tasksRes = await fetch(`/api/projects/${projectSlug}/tasks?t=${Date.now()}`);
-        if (!tasksRes.ok) throw new Error('Failed to fetch tasks');
-        const tasksData = await tasksRes.json();
+      setProject(projectData.project);
 
-        if (tasksData.status === 'success') {
-          setTasks(tasksData.tasks);
-        } else {
-          throw new Error(tasksData.message || 'Failed to fetch tasks');
-        }
-      } else {
-        throw new Error(projectData.message || 'Failed to fetch project');
+      const tasksRes = await fetch(`/api/projects/${slug}/tasks?t=${Date.now()}`);
+      if (!tasksRes.ok) throw new Error('Failed to fetch tasks');
+      const tasksData = await tasksRes.json();
+
+      if (tasksData.status === 'success') {
+        setTasks(tasksData.tasks);
       }
 
       setLastUpdated(new Date());
     } catch (err) {
-      console.error(err);
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -76,42 +80,85 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
   };
 
   useEffect(() => {
-    if (projectSlug) fetchProjectData();
-  }, [projectSlug]);
+    if (slug) fetchProjectData();
+  }, [slug]);
 
-  // ADD TASK → REFRESH PROJECT + TEAM (real-time capacity)
+  // ADD TASK
   const handleAddTask = async (taskData: { name: string; assignedTo: string }) => {
     if (!project) return;
     try {
       const result = await createTask(project._id, taskData);
       if (result.success) {
-        toast.success('Task added successfully');
+        toast.success('Task added');
         setShowAddTaskModal(false);
-
-        // 1. Refresh project + tasks
         await fetchProjectData();
-
-        // 2. Refresh team capacity → dropdown updates instantly
         await refreshTeam();
-      } else {
-        throw new Error(result.error || 'Failed to create task');
-      }
+      } else throw new Error(result.error);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to add task');
     }
   };
 
-  // REFRESH BUTTON → sync both project & team
+  // REFRESH
   const handleRefresh = async () => {
     setIsRefreshing(true);
     await fetchProjectData();
-    await refreshTeam(); // ← sync team too
+    await refreshTeam();
     setIsRefreshing(false);
   };
 
   const handleTaskUpdate = () => fetchProjectData();
 
-  // === LOADING STATE ===
+  // EDIT PROJECT → opens modal
+  const handleEditProject = () => setShowEditProjectModal(true);
+
+  // UPDATE PROJECT → handles slug change + redirect
+  const handleUpdateProject = async (projectData: {
+    projectId: string;
+    name: string;
+    description?: string;
+  }) => {
+    try {
+      const res = await fetch('/api/projects', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(projectData),
+      });
+
+      const data = await res.json();
+
+      if (data.status === 'success') {
+        const updatedProject = data.project;
+
+        // If slug changed → redirect to new URL
+        if (updatedProject.slug !== slug) {
+          const newUrl = `/projects/${updatedProject.slug}`;
+          router.replace(newUrl); // seamless redirect without full reload
+          toast.success(`Project updated! Redirecting...`);
+        } else {
+          await fetchProjectData();
+          toast.success(`Project "${updatedProject.name}" updated`);
+        }
+
+        setShowEditProjectModal(false);
+      } else {
+        toast.error(data.message || 'Update failed');
+      }
+    } catch (err) {
+      toast.error('Failed to update project');
+    }
+  };
+
+  // Smart timestamp
+  const isUpdated =
+    project?.updatedAt && new Date(project.updatedAt) > new Date(project.createdAt);
+  const timestamp = isUpdated ? project?.updatedAt : project?.createdAt;
+  const timestampLabel = isUpdated ? 'Updated' : 'Created';
+
+  const projectStats = project ? getProjectStats(project) : null;
+  const statusColors = project ? getStatusColors(project.status) : { background: '', text: '' };
+
+  // ORIGINAL SKELETON LOADER (100% preserved)
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
@@ -181,20 +228,14 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
     );
   }
 
-  // === ERROR STATE ===
-  if (error && !project) {
+  if (error || !project) {
     return (
       <div className="min-h-screen bg-gray-50 p-6">
         <div className="max-w-6xl mx-auto text-center">
           <div className="bg-white rounded-lg shadow-md p-8 max-w-md mx-auto">
-            <div className="text-red-500 text-6xl mb-4">Failed</div>
             <h1 className="text-2xl font-bold text-gray-800 mb-4">Project Not Found</h1>
-            <p className="text-gray-600 mb-6">{error}</p>
-            <PrimaryButton
-              className='cursor-pointer'
-              bgColor='bg-primary/10'
-              onClick={() => router.push('/projects')}
-            >
+            <p className="text-gray-600 mb-6">{error || 'This project may have been deleted.'}</p>
+            <PrimaryButton onClick={() => router.push('/projects')} bgColor="bg-primary/10">
               Back to Projects
             </PrimaryButton>
           </div>
@@ -202,29 +243,6 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
       </div>
     );
   }
-
-  if (!project) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-6xl mx-auto text-center">
-          <div className="bg-white rounded-lg shadow-md p-8 max-w-md mx-auto">
-            <h1 className="text-2xl font-bold text-gray-800 mb-4">Project Not Found</h1>
-            <p className="text-gray-600 mb-6">The project you're looking for doesn't exist or you don't have access to it.</p>
-            <PrimaryButton
-              className='cursor-pointer'
-              bgColor='bg-primary/10'
-              onClick={() => router.push('/projects')}
-            >
-              Back to Projects
-            </PrimaryButton>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  const projectStats = getProjectStats(project);
-  const statusColors = getStatusColors(project.status);
 
   return (
     <>
@@ -247,7 +265,6 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
               onClick={handleRefresh}
               disabled={isRefreshing}
               className="flex items-center gap-2 text-gray-600 hover:text-gray-800 transition-colors disabled:opacity-50"
-              title="Refresh data"
             >
               <FaSync className={`text-sm ${isRefreshing ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">
@@ -261,78 +278,111 @@ export default function ProjectDetailsPageClient({ slug }: ProjectDetailsPageCli
         <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
           <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-4">
             <div className="flex-1">
-              <h1 className="text-2xl uppercase sm:text-3xl font-bold text-gray-800 mb-2 break-words">
-                {project.name}
-              </h1>
+              {/* Name + Edit Icon */}
+              <div className="flex items-center gap-3 mb-3">
+                <h1 className="text-2xl uppercase sm:text-3xl font-bold text-gray-800 break-words flex-1">
+                  {project.name}
+                </h1>
+                <button
+                  onClick={handleEditProject}
+                  className="p-2 text-primary bg-primary/10 rounded-full hover:bg-primary/20 transition-all flex-shrink-0"
+                  title="Edit project"
+                >
+                  <MdOutlineEdit className="text-lg" />
+                </button>
+              </div>
+
+              {/* Description + Edit Icon (perfectly aligned) */}
               {project.description && (
-                <p className="text-gray-600 text-base sm:text-lg break-words">
-                  {project.description}
-                </p>
+                <div className="flex items-start gap-3 mb-4">
+                  <p className="text-gray-600 text-base sm:text-lg break-words flex-1 leading-relaxed">
+                    {project.description}
+                  </p>
+                  <button
+                    onClick={handleEditProject}
+                    className="p-2 text-primary bg-primary/10 rounded-full hover:bg-primary/20 transition-all flex-shrink-0 mt-1"
+                    title="Edit description"
+                  >
+                    <MdOutlineEdit className="text-base" />
+                  </button>
+                </div>
               )}
-              <div className="flex items-center gap-4 mt-3 text-sm text-gray-500">
-                <span>Created: {formatDateTime(project.createdAt)}</span>
-                <span>Updated: {formatDateTime(project.updatedAt)}</span>
+
+              {/* Smart Timestamp */}
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <FaCalendar className="text-xs" />
+                <span>
+                  {timestampLabel}: {formatDateTime(timestamp)}
+                </span>
               </div>
             </div>
+
             <div className="flex flex-wrap gap-2">
-              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusColors.background} ${statusColors.text} whitespace-nowrap`}>
+              <span className={`px-3 py-1 rounded-full text-sm font-semibold ${statusColors.background} ${statusColors.text}`}>
                 {formatStatusText(project.status).toUpperCase()}
               </span>
-              <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800 whitespace-nowrap">
+              <span className="px-3 py-1 rounded-full text-sm font-semibold bg-gray-100 text-gray-800">
                 {project.slug}
               </span>
             </div>
           </div>
 
-          {/* Progress Overview */}
+          {/* Progress Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 text-center mb-6">
-            <ProgressCard title="Total Tasks" value={projectStats.totalTasks} icon={<FaTasks />} color="gray" />
-            <ProgressCard title="Completed" value={projectStats.completedTasks} icon={<FaCheck />} color="green" />
-            <ProgressCard title="Pending" value={projectStats.pendingTasks} icon={<FaClock />} color="blue" />
-            <ProgressCard title="Progress" value={`${projectStats.progress}%`} icon={<FaChartLine />} color="orange" />
+            <ProgressCard title="Total Tasks" value={projectStats!.totalTasks} icon={<FaTasks />} color="gray" />
+            <ProgressCard title="Completed" value={projectStats!.completedTasks} icon={<FaCheck />} color="green" />
+            <ProgressCard title="Pending" value={projectStats!.pendingTasks} icon={<FaClock />} color="blue" />
+            <ProgressCard title="Progress" value={`${projectStats!.progress}%`} icon={<FaChartLine />} color="orange" />
           </div>
 
           {/* Progress Bar */}
-          {projectStats.totalTasks > 0 && (
+          {projectStats!.totalTasks > 0 && (
             <div className="mt-4 sm:mt-6">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm font-medium text-gray-700">Overall Progress</span>
-                <span className="text-sm font-bold text-gray-800">{projectStats.progress}%</span>
+                <span className="text-sm font-bold text-gray-800">{projectStats!.progress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2 sm:h-3">
                 <div
-                  className="h-2 sm:h-3 rounded-full transition-all duration-500 ease-out"
+                  className="h-full rounded-full transition-all duration-500 ease-out"
                   style={{
-                    width: `${projectStats.progress}%`,
-                    backgroundColor: getProgressColor(projectStats.progress),
+                    width: `${projectStats!.progress}%`,
+                    backgroundColor: getProgressColor(projectStats!.progress),
                   }}
-                ></div>
+                />
               </div>
               <div className="text-xs text-gray-500 text-center mt-2 font-medium">
-                {getProgressMessage(projectStats.progress)}
+                {getProgressMessage(projectStats!.progress)}
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Tasks Section */}
+      {/* Tasks */}
       <TaskList
         tasks={tasks}
-        totalTasks={projectStats.totalTasks}
-        completedTasks={projectStats.completedTasks}
-        pendingTasks={projectStats.pendingTasks}
+        totalTasks={projectStats!.totalTasks}
+        completedTasks={projectStats!.completedTasks}
+        pendingTasks={projectStats!.pendingTasks}
         onTaskUpdate={handleTaskUpdate}
         onAddTask={() => setShowAddTaskModal(true)}
         error={error}
         pageSize={10}
       />
 
-      {/* Add Task Modal */}
+      {/* Modals */}
       <AddTaskModal
         isOpen={showAddTaskModal}
         onClose={() => setShowAddTaskModal(false)}
         onSubmit={handleAddTask}
+      />
+
+      <EditProjectModal
+        isOpen={showEditProjectModal}
+        onClose={() => setShowEditProjectModal(false)}
+        onSubmit={handleUpdateProject}
+        project={project}
       />
     </>
   );
