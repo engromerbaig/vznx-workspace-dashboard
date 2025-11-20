@@ -235,3 +235,42 @@ body {
 .animate-slideInRight {
   animation: slideInRight 0.4s ease-out forwards;
 }
+
+
+
+
+
+/* new */
+@keyframes bar-grow {
+  from {
+    width: 0%;
+    opacity: 0.5;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-bar-grow {
+  animation: bar-grow 0.8s ease-out forwards;
+}
+
+/* Optional: staggered animation for multiple bars */
+.animate-bar-grow:nth-child(1) { animation-delay: 0ms; }
+.animate-bar-grow:nth-child(2) { animation-delay: 100ms; }
+.animate-bar-grow:nth-child(3) { animation-delay: 200ms; }
+
+/* Alternative shimmer effect for bars (optional) */
+@keyframes bar-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-bar-shimmer {
+  background-size: 200% 100%;
+  animation: bar-shimmer 2s ease-in-out infinite;
+}
