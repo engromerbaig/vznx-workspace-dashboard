@@ -20,7 +20,7 @@ interface ProjectCardProps {
 }
 
 const TITLE_MAX_LENGTH = 25;
-const DESC_MAX_LENGTH = 45;
+const DESC_MAX_LENGTH = 65;
 
 const truncateText = (text: string | undefined, maxLength: number): string => {
   if (!text) return '';
@@ -122,11 +122,7 @@ export default function ProjectCard({ project, onDelete, onEdit }: ProjectCardPr
             </h3>
 
             {/* Description - fixed height container */}
-            <div className="h-[30px] mt-2 mb-4">
-              <p className="text-gray-500 text-sm leading-normal" title={project.description || ''}>
-                {truncatedDesc || <span className="text-gray-300 italic">No description</span>}
-              </p>
-            </div>
+         
           </div>
 
           <div className="flex flex-col items-end gap-2 flex-shrink-0">
@@ -145,7 +141,15 @@ export default function ProjectCard({ project, onDelete, onEdit }: ProjectCardPr
               <MdOutlineEdit className="text-lg" />
             </button>
           </div>
+
+         
         </div>
+
+            <div className="h-[30px] mt-2 mb-6">
+              <p className="text-gray-500 text-sm leading-normal" title={project.description || ''}>
+                {truncatedDesc || <span className="text-gray-300 italic">No description</span>}
+              </p>
+            </div>
 
         {/* Border line below header */}
         <div className="border-t border-gray-200 mb-4" />
