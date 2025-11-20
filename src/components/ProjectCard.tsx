@@ -10,7 +10,6 @@ import { formatDateTime } from '@/utils/dateFormatter';
 import { getStatusColors, formatStatusText } from '@/utils/projectStatus';
 import { getProgressColor, getProgressStatusText } from '@/utils/projectProgress';
 import { getTaskStats } from '@/utils/taskStats';
-import ProgressPieChart from '@/components/charts/ProgressPieChart';
 import { useEffect, useState } from 'react';
 import { toast } from '@/components/ToastProvider';
 
@@ -99,10 +98,7 @@ export default function ProjectCard({ project, onDelete, onEdit }: ProjectCardPr
         </div>
       )}
 
-      {/* Background pie chart */}
-      <div className="absolute inset-0 flex items-center justify-center opacity-25 group-hover:opacity-10 transition-opacity duration-500">
-        <ProgressPieChart progress={project.progress} size="xl" />
-      </div>
+  
 
       <div className="p-6 relative z-10 h-full flex flex-col">
         {/* Header */}
